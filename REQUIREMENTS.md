@@ -17,6 +17,12 @@ Metro Gnome is a C++/JUCE VST3 instrument plugin designed to help train musician
 - **CPU Efficiency**: Lightweight processing to avoid affecting host performance
 - **Real-time Safety**: All audio processing must be real-time safe (no allocations, locks, or blocking operations)
 
+### Deployment Requirements
+- **Self-Contained**: Installer should be fully self-contained with no additional dependencies
+- **No Manual Setup**: End users should not need to manually install runtime libraries, frameworks, or dependencies
+- **Single Installer**: One-click installation process that handles all requirements automatically
+- **Static Linking**: All necessary libraries should be statically linked or bundled with the installer where possible
+
 ## Core Features
 
 ### 1. Step Sequencer Section
