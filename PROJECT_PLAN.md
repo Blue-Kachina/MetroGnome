@@ -160,14 +160,63 @@ Risks & Mitigation
 Status: Complete — 2025-10-07 07:58 (local)
 
 ## Phase 9 – Packaging & Deployment
+
+To reduce scope risk and unblock progress, Phase 9 is split into focused sub‑phases. Each sub‑phase produces a testable artifact and includes a host discovery smoke test.
+
+### Phase 9.1 – Windows Installer (WiX via CPack)
 Goals
-- Self‑contained installers; minimal user steps.
+- Produce a WiX MSI installer that deploys MetroGnome.vst3 into the per‑user VST3 directory without requiring admin rights.
+- Support upgrades (stable UpgradeCode) and clean uninstall.
 Deliverables
-- Windows installer (MSIX/WiX); macOS instructions or pkg with VST3; Linux instructions or package
+- WiX MSI built by CPack; ZIP artifact for manual install fallback
+- Installer metadata: ProductName, Manufacturer, Version, Upgrade GUID
 Acceptance Criteria
-- One‑click install; plugin discoverable by host without manual steps.
+- Double‑click install places MetroGnome.vst3 under %LOCALAPPDATA%\Programs\Common\VST3
+- Verified discovery in at least two hosts (e.g., Reaper, Cakewalk) without manual path config
+- Uninstall removes files and Start Menu entry (if any) without breaking user settings
 Risks & Mitigation
-- Static linking constraints/licensing → follow JUCE and third‑party licenses; bundle as needed.
+- Code signing not available → allow unsigned MSI initially; add signing later (Phase 10)
+- Per‑user path differences on older hosts → document fallback ZIP and optional manual path
+Notes
+- CMake already sets CPACK_GENERATOR=WIX;ZIP and a stable CPACK_WIX_UPGRADE_GUID.
+
+### Phase 9.2 – macOS Distribution (Pkg or Instructions)
+Goals
+- Provide either a signed pkg installer or clear instructions for copying MetroGnome.vst3.
+Deliverables
+- If pkg: productbuild pkg that installs to /Library/Audio/Plug-Ins/VST3
+- Otherwise: INSTALL-macOS.md with step‑by‑step copy instructions and Gatekeeper notes
+Acceptance Criteria
+- Plugin is visible in Logic Pro (via AU wrapper test if applicable) or a VST3 host (e.g., Reaper)
+- Minimal user steps (≤3)
+Risks & Mitigation
+- Signing/Notarization delays → ship instructions first; pkg later when signing is available
+
+### Phase 9.3 – Linux Packaging/Instructions
+Goals
+- Provide a tarball and instructions for installing to ~/.vst3
+Deliverables
+- TGZ/ZIP artifacts; INSTALL-linux.md with host cache refresh steps
+Acceptance Criteria
+- Verified discovery in at least one Linux host (e.g., Reaper for Linux)
+Risks & Mitigation
+- Distro variance → prioritize user-local install; avoid root requirements
+
+### Phase 9.4 – Installer Validation & Smoke Tests
+Goals
+- Validate installers on clean VMs where possible; document results
+Deliverables
+- INSTALL-TESTS.md with steps, screenshots/notes
+Acceptance Criteria
+- All target OS flows succeed start‑to‑finish; uninstall leaves system clean
+
+### Phase 9.5 – Packaging Polish
+Goals
+- Finalize metadata, license files, and optional signing configuration
+Deliverables
+- LICENSE included in packages; optional code signing checklist
+Acceptance Criteria
+- Packages meet release bar for Phase 10
 
 ## Phase 10 – Documentation & Release
 Goals
@@ -198,8 +247,17 @@ Acceptance Criteria
 - M6: State/automation/MIDI (Phase 6) — Complete (2025-10-06)
 - M7: Perf/RT pass (Phase 7) — Complete (2025-10-06 23:16)
 - M8: Cross‑platform builds (Phase 8) — Complete (2025-10-07 07:58)
-- M9: Installers (Phase 9)
+- M9a: Windows installer (Phase 9.1)
+- M9b: macOS distribution (Phase 9.2)
+- M9c: Linux packaging/instructions (Phase 9.3)
+- M9d: Installer validation (Phase 9.4)
+- M9e: Packaging polish (Phase 9.5)
 - M10: 0.1.0 release (Phase 10)
 
 ## Next Actions
-- Proceed to Phase 9 – Packaging & Deployment: prepare installers for Windows (MSIX/WiX) and macOS (pkg with VST3), add Linux packaging/instructions, and smoke‑test plugin discovery in target hosts.
+- Start Phase 9.1 (Windows):
+  - Build Release and generate MSI/ZIP via CPack (WiX). 
+  - Install on a test machine; verify VST3 at %LOCALAPPDATA%\Programs\Common\VST3 and host discovery.
+  - Document results and any path/signing issues.
+- Prep Phase 9.2 (macOS): Decide pkg vs instructions based on signing availability.
+- Prep Phase 9.3 (Linux): Draft INSTALL-linux.md steps and verify on one host.

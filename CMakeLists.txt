@@ -112,8 +112,9 @@ else()
     set(CPACK_GENERATOR "TGZ;ZIP")
 endif()
 
-# Install rules: place the plugin bundle at the root of the install prefix
-install(TARGETS MetroGnome BUNDLE DESTINATION ".")
+# Install rules: place the plugin at the root of the install prefix
+# Use generic DESTINATION for cross-platform; on Windows this installs the .vst3 directory under the prefix
+install(TARGETS MetroGnome DESTINATION ".")
 
 # Basic package metadata
 set(CPACK_PACKAGE_NAME "MetroGnome")
