@@ -10,6 +10,7 @@ static constexpr const char* kParamStepCount = "stepCount";
 static constexpr const char* kParamEnableAll = "enableAll";
 static constexpr const char* kParamDisableAll = "disableAll";
 static constexpr const char* kParamVolume = "volume";
+static constexpr const char* kParamDanceMode = "danceMode";
 static juce::String stepEnabledId (int idx) { return juce::String("stepEnabled_") + juce::String(idx + 1); }
 
 //==============================================================================
@@ -33,6 +34,7 @@ MetroGnomeAudioProcessor::MetroGnomeAudioProcessor()
     for (int i = 0; i < 16; ++i)
         stepEnabledParams[i] = apvts.getRawParameterValue(stepEnabledId(i).toRawUTF8());
     volumeParam = apvts.getRawParameterValue(kParamVolume);
+    danceModeParam = apvts.getRawParameterValue(kParamDanceMode);
 }
 
 MetroGnomeAudioProcessor::~MetroGnomeAudioProcessor() = default;
@@ -145,6 +147,9 @@ void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     if (crossing.crosses)
     {
         const int stepIdx = (stepCount > 0) ? (crossing.subdivisionIndex % stepCount) : 0;
+        // Update UI-visible current step index regardless of enabled state
+        currentStepIndex.store(stepIdx);
+
         const bool stepEnabled = (stepEnabledParams[stepIdx] != nullptr) && (stepEnabledParams[stepIdx]->load() >= 0.5f);
         if (stepEnabled)
         {
@@ -243,6 +248,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout MetroGnomeAudioProcessor::cr
     // Output level
     params.push_back(std::make_unique<juce::AudioParameterFloat>(kParamVolume, "Volume",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.0f, 1.0f), 0.8f));
+
+    // UI: Dance mode toggle
+    params.push_back(std::make_unique<juce::AudioParameterBool>(kParamDanceMode, "Dance Mode", false));
 
     for (int i = 0; i < 16; ++i)
     {

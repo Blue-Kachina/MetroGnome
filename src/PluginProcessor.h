@@ -41,6 +41,9 @@ public:
     // Parameter access (for future UI)
     juce::AudioProcessorValueTreeState& getAPVTS() noexcept { return apvts; }
 
+    // UI helpers
+    int getCurrentStepIndex() const noexcept { return currentStepIndex.load(); }
+
 private:
     // Parameter layout
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
@@ -56,11 +59,15 @@ private:
     std::atomic<float>* enableAllParam = nullptr;
     std::atomic<float>* disableAllParam = nullptr;
     std::atomic<float>* volumeParam = nullptr; // 0..1 linear volume
+    std::atomic<float>* danceModeParam = nullptr; // UI-only toggle
 
     // Sequencer last gate (for Phase 4 triggering), -1 means none this block
     int lastGateSample = -1;
     int lastGateStepIndex = -1;
     int lastGateBarIndex = -1;
+
+    // UI timing info for dance mode (updated on every subdivision crossing)
+    std::atomic<int> currentStepIndex { -1 };
 
     // Simple click synthesizer state (RT-safe, no allocations)
     bool clickActive = false;

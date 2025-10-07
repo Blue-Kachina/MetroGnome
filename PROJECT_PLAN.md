@@ -104,6 +104,7 @@ Status
 - Completed on 2025-10-06 22:34 (local): Added Volume parameter and a RT-safe click synth (short 3 kHz sine burst with exponential decay). Zero-latency retrigger at gate sample; stereo rendering; buffer cleared at block start. 
 
 ## Phase 5 – UI/UX (Initial)
+- Completed on 2025-10-06 23:04 (local): Implemented fixed-size editor (536x1024), preloaded background images (assets/images/metrognome-a.png and -b.png), 4x4 step grid with illuminated state, rotary controls (Steps and Volume), Enable All/Disable All buttons, Dance mode toggle with 60 FPS repaint and background alternation per sequencer step; keyboard focus and basic hardware-style LookAndFeel.
 Goals
 - Functional editor with step blocks, core controls, and studio hardware aesthetic.
 Deliverables
