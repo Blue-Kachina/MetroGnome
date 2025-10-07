@@ -60,6 +60,8 @@ Phase 2b – Timing Math Utilities
   - No allocations; pure functions where possible
 - Risks & Mitigation
   - Floating‑point edge cases → epsilon nudges and tests around boundaries
+- Status
+  - Completed on 2025-10-06 22:00 (local): timing utilities implemented (bar/beat, subdivision index, first-crossing) with unit tests (tempos 40–240 BPM, signatures 3–7, subdivisions 1–64). Boundary edge cases handled with epsilon and verified by tests.
 
 Phase 2c – Integration in Audio Path
 - Deliverables
@@ -69,6 +71,8 @@ Phase 2c – Integration in Audio Path
   - No regressions in build/load; CPU stable; timing values observable via debug/logs when enabled
 - Risks & Mitigation
   - DAW differences → verify in at least two hosts (e.g., Reaper, VST3 validator)
+- Status
+  - Completed on 2025-10-06 21:59 (local): timing utilities are integrated in processBlock; first subdivision crossing computed per block. Output remains silent. Optional debug logs gated by METROG_DEBUG_TIMING compile-time flag.
 
 ## Phase 3 – Step Sequencer Core
 Goals
@@ -183,5 +187,5 @@ Acceptance Criteria
 - M10: 0.1.0 release (Phase 10)
 
 ## Next Actions
-- Confirm Phase 2a implementation meets acceptance criteria in at least one DAW (e.g., Reaper) via debug inspection. 
-- Proceed to Phase 2b – Timing Math Utilities: add bar/beat and subdivision computations with unit‑style tests.
+- Verify Phase 2 (2a–2c) behavior in at least one DAW (e.g., Reaper) via debug logs; ensure CPU stability.
+- Proceed to Phase 3 – Step Sequencer Core: add parameters and emit gate triggers at subdivision boundaries.

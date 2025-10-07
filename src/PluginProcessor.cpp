@@ -1,6 +1,10 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+#ifndef METROG_DEBUG_TIMING
+#define METROG_DEBUG_TIMING 0
+#endif
+
 //==============================================================================
 MetroGnomeAudioProcessor::MetroGnomeAudioProcessor()
     : juce::AudioProcessor (BusesProperties()
@@ -75,7 +79,18 @@ void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     // Compute subdivision crossing for this block (will be used by sequencer in Phase 3)
     const auto crossing = timing.findFirstSubdivisionCrossing(hostInfo, buffer.getNumSamples());
-    (void)crossing; // placeholder until Phase 3 emits gates
+
+#if METROG_DEBUG_TIMING
+    if (crossing.crosses)
+    {
+        DBG ("[Timing] bar=" << crossing.barIndex
+             << " subIdx=" << crossing.subdivisionIndex
+             << " sample@=" << crossing.firstCrossingSample
+             << " ppqStart=" << hostInfo.ppqPosition
+             << " bpm=" << hostInfo.tempoBPM
+             << " tsigN=" << hostInfo.timeSigNumerator);
+    }
+#endif
 
     // Emit silence deterministically for now (Phase 1/2 audio path remains silent)
     buffer.clear();
