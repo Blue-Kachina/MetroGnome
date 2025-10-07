@@ -55,6 +55,10 @@ void MetroGnomeAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     const int timeSigNum = static_cast<int>(timeSigNumParam ? timeSigNumParam->load() : 4.0f);
     timing.setSubdivisionsPerBar(juce::jlimit(1, 16, timeSigNum));
 
+    // Reset UI indices/parity
+    currentStepIndex.store(-1);
+    danceParity.store(0);
+
     // Initialize click synth parameters (short sine burst with exponential decay)
     const double clickMs = 10.0; // 10 ms max length
     clickMaxSamples = static_cast<int>(std::round((clickMs * 0.001) * sampleRate));
@@ -186,6 +190,8 @@ void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         const int stepIdx = (stepCount > 0) ? (crossing.subdivisionIndex % stepCount) : 0;
         // Update UI-visible current step index regardless of enabled state
         currentStepIndex.store(stepIdx);
+        // Flip dance parity on every subdivision crossing for smooth alternation
+        danceParity.fetch_xor(1);
 
         const bool stepEnabled = (stepEnabledParams[stepIdx] != nullptr) && (stepEnabledParams[stepIdx]->load() >= 0.5f);
         if (stepEnabled)

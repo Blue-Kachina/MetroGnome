@@ -44,6 +44,7 @@ public:
 
     // UI helpers
     int getCurrentStepIndex() const noexcept { return currentStepIndex.load(); }
+    int getDanceParity() const noexcept { return danceParity.load(); }
 
     // MIDI learn API (UI thread)
     void armMidiLearn (const juce::String& paramID);
@@ -92,6 +93,7 @@ private:
 
     // UI timing info for dance mode (updated on every subdivision crossing)
     std::atomic<int> currentStepIndex { -1 };
+    std::atomic<int> danceParity { 0 }; // flips on every subdivision crossing for smooth dance alternation
 
     // Simple click synthesizer state (RT-safe, no allocations)
     bool clickActive = false;

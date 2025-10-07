@@ -145,11 +145,19 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
     {
         auto* tb = new juce::ToggleButton(juce::String(i + 1));
         tb->setClickingTogglesState(true);
+        tb->setInterceptsMouseClicks(true, false);
         tb->setColour(juce::ToggleButton::textColourId, juce::Colours::silver);
         tb->setTooltip("Enable step " + juce::String(i + 1));
         tb->setWantsKeyboardFocus(false);
         stepToggles.add(tb);
         addAndMakeVisible(tb);
+
+        // Explicitly notify host on click to ensure parameter toggles
+        tb->onClick = [this, i]
+        {
+            if (auto* p = processor.getAPVTS().getParameter(stepEnabledId(i)))
+                p->setValueNotifyingHost(stepToggles[i]->getToggleState() ? 1.0f : 0.0f);
+        };
 
         auto* att = new APVTS::ButtonAttachment(apvts, stepEnabledId(i), *tb);
         stepAttachments.add(att);
@@ -268,12 +276,12 @@ void MetroGnomeAudioProcessorEditor::paint (juce::Graphics& g)
     // Choose background based on dance toggle and current step parity
     const auto* dancePtr = processor.getAPVTS().getRawParameterValue(kParamDanceMode);
     const bool dance = (dancePtr != nullptr) ? (dancePtr->load() >= 0.5f) : false;
+    const int parity = processor.getDanceParity();
     const int stepIdx = processor.getCurrentStepIndex();
-    const bool even = (stepIdx % 2) == 0;
 
     juce::Image bg;
     if (dance)
-        bg = even ? bgA : bgB;
+        bg = (parity % 2 == 0) ? bgA : bgB;
     else
         bg = bgA.isValid() ? bgA : bgB;
 
@@ -295,7 +303,7 @@ void MetroGnomeAudioProcessorEditor::paint (juce::Graphics& g)
     auto rowArea = bounds.reduced(20);
     rowArea = rowArea.withTrimmedTop(260).withHeight(90); // y ~260..350
 
-    const int pad = 8;
+    const int pad = 0;
 
     // Safe default for step count if APVTS not yet initialised
     int safeStepCount = 8;
@@ -323,10 +331,10 @@ void MetroGnomeAudioProcessorEditor::paint (juce::Graphics& g)
             color = color.brighter(0.8f);
 
         g.setColour (color.withAlpha(0.85f));
-        g.fillRoundedRectangle(cell.toFloat().reduced(6.0f), 10.0f);
+        g.fillRoundedRectangle(cell.toFloat(), 10.0f);
 
         g.setColour(juce::Colours::black.withAlpha(0.6f));
-        g.drawRoundedRectangle(cell.toFloat().reduced(6.0f), 10.0f, 2.0f);
+        g.drawRoundedRectangle(cell.toFloat(), 10.0f, 2.0f);
     }
 }
 
@@ -362,7 +370,7 @@ void MetroGnomeAudioProcessorEditor::resized()
     // Place step toggles over the single row cells for click-to-toggle interaction
     auto rowArea = getLocalBounds().reduced(20);
     rowArea = rowArea.withTrimmedTop(260).withHeight(90);
-    const int pad = 8;
+    const int pad = 0;
 
     int safeStepCount = 8;
     if (const auto* sc = processor.getAPVTS().getRawParameterValue(kParamStepCount))
@@ -382,6 +390,7 @@ void MetroGnomeAudioProcessorEditor::resized()
                 auto y = rowArea.getY();
                 juce::Rectangle<int> cell (x, y, cellW, cellH);
                 tb->setBounds(cell);
+                tb->toFront(false);
                 tb->setAlpha(0.001f); // visually hidden but clickable
                 tb->setColour(juce::ToggleButton::textColourId, juce::Colours::transparentBlack);
             }
