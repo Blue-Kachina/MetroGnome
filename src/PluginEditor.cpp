@@ -165,6 +165,9 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
 
     // 60 FPS timer for smooth UI
     startTimerHz(60);
+
+    // Ensure overlay step toggles are positioned on first open
+    resized();
 }
 
 MetroGnomeAudioProcessorEditor::~MetroGnomeAudioProcessorEditor()
