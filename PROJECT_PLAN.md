@@ -163,7 +163,7 @@ Status: Complete — 2025-10-07 07:58 (local)
 Goals
 - Self‑contained installers; minimal user steps.
 Deliverables
-- Windows installer (MSIX/WiX); macOS pkg with VST3; Linux instructions or package
+- Windows installer (MSIX/WiX); macOS instructions or pkg with VST3; Linux instructions or package
 Acceptance Criteria
 - One‑click install; plugin discoverable by host without manual steps.
 Risks & Mitigation

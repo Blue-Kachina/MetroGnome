@@ -21,14 +21,14 @@ FetchContent_MakeAvailable(juce)
 
 # Define the plugin target
 juce_add_plugin(MetroGnome
-    COMPANY_NAME "MetroGnome"
-    BUNDLE_ID com.metronome.metrogome
+    COMPANY_NAME "Otitis Media"
+    BUNDLE_ID com.otitismedia.metrognome
     IS_SYNTH TRUE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
     COPY_PLUGIN_AFTER_BUILD FALSE
-    PLUGIN_MANUFACTURER_CODE MetG
+    PLUGIN_MANUFACTURER_CODE OMed
     PLUGIN_CODE MtGn
     FORMATS VST3
     VST3_CATEGORIES Instrument
@@ -91,3 +91,45 @@ set_target_properties(MetroGnome_Tests PROPERTIES CXX_STANDARD 17 CXX_STANDARD_R
 include(CTest)
 enable_testing()
 add_test(NAME TimingTests COMMAND MetroGnome_Tests)
+
+# ---------------- Install & Packaging (Phase 9) ----------------
+# Install the VST3 bundle into the standard platform-specific location.
+# We set the packaging install prefix so CPack installers deploy directly to host-discoverable paths.
+if (WIN32)
+    # Windows standard VST3 location
+    # Use per-user VST3 location to avoid UAC/admin requirements
+    set(VST3_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/Programs/Common/VST3")
+    set(CPACK_GENERATOR "WIX;ZIP")
+    # Stable GUID required by WiX to support upgrades — do not change after release
+    set(CPACK_WIX_UPGRADE_GUID "8E6A2E3A-7B7B-4DBE-9D57-1D5F8B3D9C12")
+elseif(APPLE)
+    # macOS standard VST3 location
+    set(VST3_INSTALL_PREFIX "/Library/Audio/Plug-Ins/VST3")
+    set(CPACK_GENERATOR "productbuild;DragNDrop")
+else()
+    # Linux: prefer user scope to avoid root requirements
+    set(VST3_INSTALL_PREFIX "$ENV{HOME}/.vst3")
+    set(CPACK_GENERATOR "TGZ;ZIP")
+endif()
+
+# Install rules: place the plugin bundle at the root of the install prefix
+install(TARGETS MetroGnome BUNDLE DESTINATION ".")
+
+# Basic package metadata
+set(CPACK_PACKAGE_NAME "MetroGnome")
+set(CPACK_PACKAGE_VENDOR "MetroGnome")
+set(CPACK_PACKAGE_CONTACT "devnull@example.com")
+set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "MetroGnome — JUCE VST3 Metronome Plugin")
+
+# Ensure CPack installs into proper VST3 directory by default
+set(CPACK_PACKAGING_INSTALL_PREFIX "${VST3_INSTALL_PREFIX}")
+
+# macOS productbuild identifiers
+if(APPLE)
+    set(CPACK_PRODUCTBUILD_IDENTIFIER "com.otitismedia.metrognome.pkg")
+endif()
+
+include(CPack)
