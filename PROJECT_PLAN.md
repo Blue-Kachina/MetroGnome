@@ -86,6 +86,8 @@ Acceptance Criteria
 - All parameters are automatable and persist in state.
 Risks & Mitigation
 - Off‑by‑one/edge cases at bar boundaries → unit tests over multiple bars.
+Status
+- Completed on 2025-10-06 22:24 (local): Implemented APVTS with full parameter layout (stepCount, per-step enables, enableAll/disableAll), state persistence, and host-locked gate emission at subdivision boundaries. RT-safe access via cached atomics; plugin builds and Timing tests pass.
 
 ## Phase 4 – Sound Generator
 Goals
@@ -187,5 +189,5 @@ Acceptance Criteria
 - M10: 0.1.0 release (Phase 10)
 
 ## Next Actions
-- Verify Phase 2 (2a–2c) behavior in at least one DAW (e.g., Reaper) via debug logs; ensure CPU stability.
-- Proceed to Phase 3 – Step Sequencer Core: add parameters and emit gate triggers at subdivision boundaries.
+- Verify Phase 3 gate behavior in at least one DAW (e.g., Reaper) via debug logs; ensure deterministic, phase-accurate triggers at step boundaries.
+- Proceed to Phase 4 – Sound Generator: implement click rendering on gates and add volume control.

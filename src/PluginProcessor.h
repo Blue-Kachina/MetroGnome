@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <array>
 #include "Timing.h"
 
 class MetroGnomeAudioProcessor : public juce::AudioProcessor
@@ -37,10 +38,28 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    // Parameter access (for future UI)
+    juce::AudioProcessorValueTreeState& getAPVTS() noexcept { return apvts; }
+
 private:
+    // Parameter layout
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+
     // Timing engine and cached host info (preallocated, no dynamic work in processBlock)
     metrog::TimingEngine timing;
     metrog::HostTransportInfo hostInfo;
+
+    // Parameters
+    juce::AudioProcessorValueTreeState apvts;
+    std::atomic<float>* stepCountParam = nullptr;
+    std::array<std::atomic<float>*, 16> stepEnabledParams{};
+    std::atomic<float>* enableAllParam = nullptr;
+    std::atomic<float>* disableAllParam = nullptr;
+
+    // Sequencer last gate (for Phase 4 triggering), -1 means none this block
+    int lastGateSample = -1;
+    int lastGateStepIndex = -1;
+    int lastGateBarIndex = -1;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MetroGnomeAudioProcessor)
 };
