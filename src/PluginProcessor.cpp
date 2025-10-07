@@ -202,6 +202,12 @@ void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     const int numChans = buffer.getNumChannels();
     const float vol = juce::jlimit(0.0f, 1.0f, volumeParam ? volumeParam->load() : 0.8f);
 
+    // Hoist channel write pointers out of the per-sample loop for performance
+    std::array<float*, 64> writePtrs{}; // support up to 64 channels
+    const int chanLimit = juce::jmin(numChans, (int)writePtrs.size());
+    for (int ch = 0; ch < chanLimit; ++ch)
+        writePtrs[(size_t)ch] = buffer.getWritePointer(ch);
+
     for (int s = 0; s < numSamples; ++s)
     {
         if (lastGateSample == s)

@@ -146,6 +146,7 @@ Acceptance Criteria
 - No allocations/locks in audio thread; stable CPU usage under load.
 Risks & Mitigation
 - Hidden allocations (std::function, etc.) → prefer fixed storage and simple structs.
+Status: Complete — 2025-10-06 23:16 (local)
 
 ## Phase 8 – Cross‑Platform Builds
 Goals
@@ -194,10 +195,10 @@ Acceptance Criteria
 - M4: Click sound (Phase 4)
 - M5: Usable UI (Phase 5)
 - M6: State/automation/MIDI (Phase 6) — Complete (2025-10-06)
-- M7: Perf/RT pass (Phase 7)
+- M7: Perf/RT pass (Phase 7) — Complete (2025-10-06 23:16)
 - M8: Cross‑platform builds (Phase 8)
 - M9: Installers (Phase 9)
 - M10: 0.1.0 release (Phase 10)
 
 ## Next Actions
-- Proceed to Phase 7 – Performance & RT Safety Hardening: audit the audio path for RT safety, complete checklist, and profile CPU usage under load.
+- Proceed to Phase 8 – Cross‑Platform Builds: add CMake presets and CI build jobs for macOS/Linux; verify Release builds in at least one DAW per platform.
