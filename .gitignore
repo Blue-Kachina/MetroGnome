@@ -1,2 +1,106 @@
-.idea
+# ------------------------------------------------------------
+# MetroGnome .gitignore (JUCE + CMake + VST3, Windows-first)
+# Keep source and project files clean; ignore all build/artifact noise.
+# ------------------------------------------------------------
+
+# IDE/project settings
+.idea/
+.vscode/
+.vs/
+*.code-workspace
+
+# OS junk
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Environment / secrets
 .env
+.env.*
+*.key
+*.pem
+
+# CMake build directories (common names)
+/build/
+/build-*/
+/cmake-build*/
+/out/
+/bin/
+/lib/
+/dist/
+
+# CMake generated files (should live in build dirs, but ignore just in case)
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+install_manifest.txt
+Makefile
+compile_commands.json
+
+# FetchContent and external deps (generated in build tree)
+_deps/
+
+# Compiler/obj intermediates and caches
+*.obj
+*.o
+*.lo
+*.la
+*.a
+*.lib
+*.exp
+*.ilk
+*.dll
+*.pdb
+*.idb
+*.pch
+*.ipdb
+*.iobj
+*.rsp
+*.tlog
+*.cache
+*.gcno
+*.gcda
+*.gcov
+
+# JUCE / Plugin build outputs
+*.vst3
+*.component
+*.vst
+*.aaxplugin
+*.snap
+
+# Logs and crash dumps
+*.log
+*.dmp
+*.crash
+
+# Packaging / archives / installers
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+*.bz2
+*.rar
+*.msi
+*.msix
+*.msm
+*.pkg
+*.dmg
+
+# CLion/Xcode/Visual Studio derived data
+cmake-build-*/
+DerivedData/
+*.VC.db
+*.VC.opendb
+
+# Local tools and caches
+.cache/
+.ninja_deps
+.ninja_log
+
+# JUCE Projucer (not used here, but ignore if added accidentally)
+*.jucer
+JuceLibraryCode/

@@ -1,2 +1,113 @@
-.idea
+# ------------------------------------------------------------
+# MetroGnome .aiignore — exclude noise for AI assistants
+# Keep only source, CMake files, and human-written docs in context.
+# ------------------------------------------------------------
+
+# VCS internals
+.git/
+.gitignore
+.gitattributes
+.gitmodules
+
+# IDE/project settings
+.idea/
+.vscode/
+.vs/
+*.code-workspace
+
+# OS junk
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Environment / secrets
 .env
+.env.*
+*.key
+*.pem
+
+# Build trees and outputs
+/build/
+/build-*/
+/cmake-build*/
+/out/
+/bin/
+/lib/
+/dist/
+
+# CMake generated content
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+install_manifest.txt
+Makefile
+compile_commands.json
+
+# FetchContent/externals
+_deps/
+*/_deps/
+
+# Compiler intermediates and binaries
+*.obj
+*.o
+*.lo
+*.la
+*.a
+*.lib
+*.exp
+*.ilk
+*.dll
+*.pdb
+*.idb
+*.pch
+*.ipdb
+*.iobj
+*.rsp
+*.tlog
+*.cache
+*.gcno
+*.gcda
+*.gcov
+
+# Plugin bundles and artifacts
+*.vst3
+*.component
+*.vst
+*.aaxplugin
+*.snap
+
+# Logs and dumps
+*.log
+*.dmp
+*.crash
+
+# Archives and installers
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+*.bz2
+*.rar
+*.msi
+*.msix
+*.msm
+*.pkg
+*.dmg
+
+# Local tools and caches
+.cache/
+.ninja_deps
+.ninja_log
+
+# JUCE Projucer artifacts (not used here)
+*.jucer
+JuceLibraryCode/
+
+# Allowlist note:
+# AI tools should still include these by default: 
+# - CMakeLists.txt
+# - src/**/*.h, src/**/*.hpp, src/**/*.cpp, src/**/*.mm
+# - *.md, LICENSE, README
