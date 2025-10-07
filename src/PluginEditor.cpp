@@ -50,7 +50,7 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
     : juce::AudioProcessorEditor (&p), processor (p)
 {
     setLookAndFeel (&laf);
-    setWantsKeyboardFocus (true);
+    setWantsKeyboardFocus (false);
 
     // Fixed size per Phase 5
     setResizable (false, false);
@@ -145,19 +145,13 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
     {
         auto* tb = new juce::ToggleButton(juce::String(i + 1));
         tb->setClickingTogglesState(true);
+        tb->setTriggeredOnMouseDown(true);
         tb->setInterceptsMouseClicks(true, false);
         tb->setColour(juce::ToggleButton::textColourId, juce::Colours::silver);
         tb->setTooltip("Enable step " + juce::String(i + 1));
         tb->setWantsKeyboardFocus(false);
         stepToggles.add(tb);
         addAndMakeVisible(tb);
-
-        // Explicitly notify host on click to ensure parameter toggles
-        tb->onClick = [this, i]
-        {
-            if (auto* p = processor.getAPVTS().getParameter(stepEnabledId(i)))
-                p->setValueNotifyingHost(stepToggles[i]->getToggleState() ? 1.0f : 0.0f);
-        };
 
         auto* att = new APVTS::ButtonAttachment(apvts, stepEnabledId(i), *tb);
         stepAttachments.add(att);
