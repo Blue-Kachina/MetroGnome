@@ -177,8 +177,13 @@ Acceptance Criteria
 Risks & Mitigation
 - Code signing not available → allow unsigned MSI initially; add signing later (Phase 10)
 - Per‑user path differences on older hosts → document fallback ZIP and optional manual path
+Prerequisites
+- WiX Toolset v3.14+ installed and on PATH (candle/light)
+- CMake 3.24+ and Visual Studio 2022 (x64 toolchain)
 Notes
 - CMake already sets CPACK_GENERATOR=WIX;ZIP and a stable CPACK_WIX_UPGRADE_GUID.
+Status
+- Complete — 2025-10-07 12:50 (local)
 
 ### Phase 9.2 – macOS Distribution (Pkg or Instructions)
 Goals
@@ -247,7 +252,7 @@ Acceptance Criteria
 - M6: State/automation/MIDI (Phase 6) — Complete (2025-10-06)
 - M7: Perf/RT pass (Phase 7) — Complete (2025-10-06 23:16)
 - M8: Cross‑platform builds (Phase 8) — Complete (2025-10-07 07:58)
-- M9a: Windows installer (Phase 9.1)
+- M9a: Windows installer (Phase 9.1) — Complete (2025-10-07 12:50)
 - M9b: macOS distribution (Phase 9.2)
 - M9c: Linux packaging/instructions (Phase 9.3)
 - M9d: Installer validation (Phase 9.4)
@@ -255,9 +260,5 @@ Acceptance Criteria
 - M10: 0.1.0 release (Phase 10)
 
 ## Next Actions
-- Start Phase 9.1 (Windows):
-  - Build Release and generate MSI/ZIP via CPack (WiX). 
-  - Install on a test machine; verify VST3 at %LOCALAPPDATA%\Programs\Common\VST3 and host discovery.
-  - Document results and any path/signing issues.
 - Prep Phase 9.2 (macOS): Decide pkg vs instructions based on signing availability.
 - Prep Phase 9.3 (Linux): Draft INSTALL-linux.md steps and verify on one host.
