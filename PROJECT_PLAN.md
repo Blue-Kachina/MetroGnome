@@ -228,6 +228,15 @@ Acceptance Criteria
 - Verified discovery in at least one Linux host (e.g., Reaper for Linux)
 Risks & Mitigation
 - Distro variance → prioritize user-local install; avoid root requirements
+Tasks
+- Ensure CMake/CPack produces TGZ/ZIP archives with packaging prefix set to .vst3 (user scope)
+- Draft INSTALL-linux.md with:
+  - Extraction steps into $HOME so plugin ends up at ~/.vst3/MetroGnome.vst3
+  - Manual copy alternative from build tree to ~/.vst3
+  - How to refresh host plugin cache (REAPER: Clear cache/re-scan)
+- Verify discovery in REAPER for Linux: add ~/.vst3 to VST3 paths and rescan
+Status
+- Complete — 2025-10-07 13:28 (local)
 
 ### Phase 9.4 – Installer Validation & Smoke Tests
 Goals
@@ -236,6 +245,10 @@ Deliverables
 - INSTALL-TESTS.md with steps, screenshots/notes
 Acceptance Criteria
 - All target OS flows succeed start‑to‑finish; uninstall leaves system clean
+Notes
+- Skipped due to lack of appropriate VMs to test on; will revisit when resources are available
+Status
+- Skipped — 2025-10-07 13:30 (local)
 
 ### Phase 9.5 – Packaging Polish
 Goals
@@ -277,7 +290,7 @@ Acceptance Criteria
 - M9a: Windows installer (Phase 9.1) — Complete (2025-10-07 12:50)
 - M9b: macOS distribution (Phase 9.2)
 - M9c: Linux packaging/instructions (Phase 9.3)
-- M9d: Installer validation (Phase 9.4)
+- M9d: Installer validation (Phase 9.4) — Skipped (2025-10-07 13:30)
 - M9e: Packaging polish (Phase 9.5)
 - M10: 0.1.0 release (Phase 10)
 
