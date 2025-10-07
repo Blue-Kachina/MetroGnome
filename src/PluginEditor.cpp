@@ -42,6 +42,7 @@ static constexpr const char* kParamEnableAll = "enableAll";
 static constexpr const char* kParamDisableAll = "disableAll";
 static constexpr const char* kParamVolume = "volume";
 static constexpr const char* kParamDanceMode = "danceMode";
+static constexpr const char* kParamTimeSigNum = "timeSigNum";
 static juce::String stepEnabledId (int idx) { return juce::String("stepEnabled_") + juce::String(idx + 1); }
 
 //==============================================================================
@@ -68,9 +69,19 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
     stepsSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     stepsSlider.setRange(1.0, 16.0, 1.0);
     stepsSlider.setDoubleClickReturnValue(true, 8.0);
-    stepsSlider.setTitle("Steps / Numerator");
+    stepsSlider.setTitle("Steps");
+    stepsSlider.setTooltip("Number of sequencer steps (independent from timing)");
     addAndMakeVisible(stepsSlider);
     stepsAttachment = std::make_unique<APVTS::SliderAttachment>(apvts, kParamStepCount, stepsSlider);
+
+    timeSigSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    timeSigSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    timeSigSlider.setRange(1.0, 16.0, 1.0);
+    timeSigSlider.setDoubleClickReturnValue(true, 4.0);
+    timeSigSlider.setTitle("Time Sig (n/x)");
+    timeSigSlider.setTooltip("Time signature numerator driving the step advance rate");
+    addAndMakeVisible(timeSigSlider);
+    timeSigAttachment = std::make_unique<APVTS::SliderAttachment>(apvts, kParamTimeSigNum, timeSigSlider);
 
     volumeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     volumeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
@@ -277,50 +288,45 @@ void MetroGnomeAudioProcessorEditor::paint (juce::Graphics& g)
        #endif
     }
 
-    // Step lights overlay
+    // Step lights overlay - single row responsive layout
     auto bounds = getLocalBounds();
 
-    // Define grid area for steps near middle of UI
-    auto gridArea = bounds.reduced(20).removeFromTop(300).withY(300);
+    // Define row area for steps near middle of UI
+    auto rowArea = bounds.reduced(20);
+    rowArea = rowArea.withTrimmedTop(260).withHeight(90); // y ~260..350
 
-    const int cols = 4;
-    const int rows = 4;
-    const int pad = 10;
-    const int cellW = (gridArea.getWidth() - pad * (cols - 1)) / cols;
-    const int cellH = (gridArea.getHeight() - pad * (rows - 1)) / rows;
+    const int pad = 8;
 
     // Safe default for step count if APVTS not yet initialised
     int safeStepCount = 8;
     if (const auto* sc = processor.getAPVTS().getRawParameterValue(kParamStepCount))
         safeStepCount = juce::jlimit(1, 16, (int)sc->load());
 
-    int idx = 0;
-    for (int r = 0; r < rows; ++r)
+    const int n = safeStepCount;
+    const int cellW = (rowArea.getWidth() - pad * (n - 1)) / n;
+    const int cellH = rowArea.getHeight();
+
+    for (int idx = 0; idx < n; ++idx)
     {
-        for (int c = 0; c < cols; ++c)
-        {
-            auto x = gridArea.getX() + c * (cellW + pad);
-            auto y = gridArea.getY() + r * (cellH + pad);
-            juce::Rectangle<int> cell (x, y, cellW, cellH);
+        auto x = rowArea.getX() + idx * (cellW + pad);
+        auto y = rowArea.getY();
+        juce::Rectangle<int> cell (x, y, cellW, cellH);
 
-            bool enabled = false;
-            if (auto* p = processor.getAPVTS().getRawParameterValue(stepEnabledId(idx)))
-                enabled = p->load() >= 0.5f;
+        bool enabled = false;
+        if (auto* p = processor.getAPVTS().getRawParameterValue(stepEnabledId(idx)))
+            enabled = p->load() >= 0.5f;
 
-            const bool isCurrent = (idx == (stepIdx % juce::jmax(1, safeStepCount)));
+        const bool isCurrent = (idx == (stepIdx % juce::jmax(1, n)));
 
-            auto color = enabled ? juce::Colours::limegreen : juce::Colours::darkred.darker(0.6f);
-            if (isCurrent)
-                color = color.brighter(0.8f);
+        auto color = enabled ? juce::Colours::limegreen : juce::Colours::darkred.darker(0.6f);
+        if (isCurrent)
+            color = color.brighter(0.8f);
 
-            g.setColour (color.withAlpha(0.85f));
-            g.fillRoundedRectangle(cell.toFloat().reduced(6.0f), 8.0f);
+        g.setColour (color.withAlpha(0.85f));
+        g.fillRoundedRectangle(cell.toFloat().reduced(6.0f), 10.0f);
 
-            g.setColour(juce::Colours::black.withAlpha(0.6f));
-            g.drawRoundedRectangle(cell.toFloat().reduced(6.0f), 8.0f, 2.0f);
-
-            ++idx;
-        }
+        g.setColour(juce::Colours::black.withAlpha(0.6f));
+        g.drawRoundedRectangle(cell.toFloat().reduced(6.0f), 10.0f, 2.0f);
     }
 }
 
@@ -331,9 +337,10 @@ void MetroGnomeAudioProcessorEditor::resized()
 
     auto topBar = area.removeFromTop(60);
     stepsSlider.setBounds(topBar.removeFromLeft(160));
-    volumeSlider.setBounds(topBar.removeFromLeft(160).withX(stepsSlider.getRight() + 10));
+    timeSigSlider.setBounds(topBar.removeFromLeft(160).withX(stepsSlider.getRight() + 10));
+    volumeSlider.setBounds(topBar.removeFromLeft(160).withX(timeSigSlider.getRight() + 10));
 
-    auto mid = area.removeFromTop(360); // step grid lives in paint overlay
+    auto mid = area.removeFromTop(360); // step row lives in paint overlay
     juce::ignoreUnused(mid);
 
     auto bottom = area.removeFromBottom(160);
@@ -352,29 +359,38 @@ void MetroGnomeAudioProcessorEditor::resized()
     learnStepsBtn.setBounds(learnRow2.removeFromLeft(200));
     clearStepsBtn.setBounds(learnRow2.removeFromLeft(60).withX(learnStepsBtn.getRight() + 8));
 
-    // Place step toggles invisibly aligned below grid for accessibility; we still want keyboard toggling
-    auto gridArea = getLocalBounds().reduced(20).removeFromTop(300).withY(300);
-    const int cols = 4;
-    const int rows = 4;
-    const int pad = 10;
-    const int cellW = (gridArea.getWidth() - pad * (cols - 1)) / cols;
-    const int cellH = (gridArea.getHeight() - pad * (rows - 1)) / rows;
+    // Place step toggles over the single row cells for click-to-toggle interaction
+    auto rowArea = getLocalBounds().reduced(20);
+    rowArea = rowArea.withTrimmedTop(260).withHeight(90);
+    const int pad = 8;
 
-    int idx = 0;
-    for (int r = 0; r < rows; ++r)
-        for (int c = 0; c < cols; ++c)
+    int safeStepCount = 8;
+    if (const auto* sc = processor.getAPVTS().getRawParameterValue(kParamStepCount))
+        safeStepCount = juce::jlimit(1, 16, (int)sc->load());
+
+    const int n = safeStepCount;
+    const int cellW = (rowArea.getWidth() - pad * (n - 1)) / n;
+    const int cellH = rowArea.getHeight();
+
+    for (int idx = 0; idx < stepToggles.size(); ++idx)
+    {
+        if (auto* tb = stepToggles[idx])
         {
-            auto x = gridArea.getX() + c * (cellW + pad);
-            auto y = gridArea.getY() + r * (cellH + pad);
-            juce::Rectangle<int> cell (x, y, cellW, cellH);
-            if (auto* tb = stepToggles[idx])
+            if (idx < n)
             {
+                auto x = rowArea.getX() + idx * (cellW + pad);
+                auto y = rowArea.getY();
+                juce::Rectangle<int> cell (x, y, cellW, cellH);
                 tb->setBounds(cell);
-                tb->setAlpha(0.0f); // visually hidden but focusable
+                tb->setAlpha(0.001f); // visually hidden but clickable
                 tb->setColour(juce::ToggleButton::textColourId, juce::Colours::transparentBlack);
             }
-            ++idx;
+            else
+            {
+                tb->setBounds(juce::Rectangle<int>(0, 0, 0, 0)); // hide
+            }
         }
+    }
 }
 
 void MetroGnomeAudioProcessorEditor::timerCallback()

@@ -23,7 +23,8 @@ private:
     MetroGnomeAudioProcessor& processor;
 
     // UI components
-    juce::Slider stepsSlider;      // step count / numerator
+    juce::Slider stepsSlider;      // number of steps
+    juce::Slider timeSigSlider;    // time signature numerator (timing)
     juce::Slider volumeSlider;     // output volume
     juce::TextButton enableAllBtn { "Enable All" };
     juce::TextButton disableAllBtn { "Disable All" };
@@ -38,6 +39,7 @@ private:
 
     // APVTS attachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> stepsAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> timeSigAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> volumeAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> enableAllAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> disableAllAttachment;

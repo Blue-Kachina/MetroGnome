@@ -11,6 +11,7 @@ static constexpr const char* kParamEnableAll = "enableAll";
 static constexpr const char* kParamDisableAll = "disableAll";
 static constexpr const char* kParamVolume = "volume";
 static constexpr const char* kParamDanceMode = "danceMode";
+static constexpr const char* kParamTimeSigNum = "timeSigNum";
 static juce::String stepEnabledId (int idx) { return juce::String("stepEnabled_") + juce::String(idx + 1); }
 
 //==============================================================================
@@ -35,6 +36,7 @@ MetroGnomeAudioProcessor::MetroGnomeAudioProcessor()
         stepEnabledParams[i] = apvts.getRawParameterValue(stepEnabledId(i).toRawUTF8());
     volumeParam = apvts.getRawParameterValue(kParamVolume);
     danceModeParam = apvts.getRawParameterValue(kParamDanceMode);
+    timeSigNumParam = apvts.getRawParameterValue(kParamTimeSigNum);
 
     // init CC map to nulls
     for (auto& p : ccToParam) p.store(nullptr, std::memory_order_relaxed);
@@ -49,9 +51,9 @@ void MetroGnomeAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     timing.prepare(sampleRate, samplesPerBlock);
     hostInfo.sampleRate = sampleRate;
 
-    // Initialize timing subdivisions to current step count
-    const int stepCount = static_cast<int>(stepCountParam ? stepCountParam->load() : 8.0f);
-    timing.setSubdivisionsPerBar(juce::jlimit(1, 16, stepCount));
+    // Initialize timing subdivisions from time signature numerator (independent from step count)
+    const int timeSigNum = static_cast<int>(timeSigNumParam ? timeSigNumParam->load() : 4.0f);
+    timing.setSubdivisionsPerBar(juce::jlimit(1, 16, timeSigNum));
 
     // Initialize click synth parameters (short sine burst with exponential decay)
     const double clickMs = 10.0; // 10 ms max length
@@ -98,10 +100,13 @@ void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     // Clear buffer at block start; we fully synthesize output
     buffer.clear();
 
-    // Keep timing engine subdivisions synced with step count parameter (read atomically)
+    // Keep timing engine subdivisions synced with time signature numerator (independent from step count)
+    const int timeSigNum = juce::jlimit(1, 16, static_cast<int>(timeSigNumParam ? timeSigNumParam->load() : 4.0f));
+    if (timing.getSubdivisionsPerBar() != timeSigNum)
+        timing.setSubdivisionsPerBar(timeSigNum);
+
+    // Fetch current step count for UI/sequence length
     const int stepCount = juce::jlimit(1, 16, static_cast<int>(stepCountParam ? stepCountParam->load() : 8.0f));
-    if (timing.getSubdivisionsPerBar() != stepCount)
-        timing.setSubdivisionsPerBar(stepCount);
 
     // Process incoming MIDI CC messages: handle learn and mapped control
     if (! midiMessages.isEmpty())
@@ -280,7 +285,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout MetroGnomeAudioProcessor::cr
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
+    // Independent controls: step count (number of sequencer steps) and time signature numerator (timing)
     params.push_back(std::make_unique<juce::AudioParameterInt>(kParamStepCount, "Steps", 1, 16, 8));
+    params.push_back(std::make_unique<juce::AudioParameterInt>(kParamTimeSigNum, "Time Sig Numerator", 1, 16, 4));
 
     // Action buttons (momentary)
     params.push_back(std::make_unique<juce::AudioParameterBool>(kParamEnableAll, "Enable All", false));

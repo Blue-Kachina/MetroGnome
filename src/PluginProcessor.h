@@ -72,6 +72,7 @@ private:
     std::atomic<float>* disableAllParam = nullptr;
     std::atomic<float>* volumeParam = nullptr; // 0..1 linear volume
     std::atomic<float>* danceModeParam = nullptr; // UI-only toggle
+    std::atomic<float>* timeSigNumParam = nullptr; // 1..16 independent timing numerator
 
     // MIDI learn state (real-time safe communication)
     std::atomic<bool> midiLearnArmed { false };
