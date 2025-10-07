@@ -117,6 +117,8 @@ endif()
 # Install rules: place the plugin at the root of the install prefix
 # Use generic DESTINATION for cross-platform; on Windows this installs the .vst3 directory under the prefix
 install(TARGETS MetroGnome DESTINATION ".")
+# Also install LICENSE so archives/installers include it
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE DESTINATION ".")
 
 # Basic package metadata
 set(CPACK_PACKAGE_NAME "MetroGnome")
@@ -127,6 +129,9 @@ set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "MetroGnome — JUCE VST3 Metronome Plugin")
+set(CPACK_PACKAGE_LICENSE "MIT")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://example.com/metrognome")
 
 # Ensure CPack installs into proper VST3 directory by default
 set(CPACK_PACKAGING_INSTALL_PREFIX "${VST3_INSTALL_PREFIX}")
