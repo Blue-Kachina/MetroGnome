@@ -84,7 +84,8 @@ First successful test run of the MetroGnome VSTi plugin completed. The plugin lo
 **Priority:** High  
 **Description:** Sequencer step blocks should fit into a single horizontal row to save vertical space.  
 **Requirements:**
-- All steps displayed in one row
+- Steps are to be displayed in a single row
+- Only the specified number of steps are to be displayed
 - Step block size should be variable/responsive based on number of active steps
 - More steps = smaller individual blocks (within readable limits)
 - Fewer steps = larger blocks for easier interaction
