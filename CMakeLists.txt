@@ -77,3 +77,17 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES
     src/PluginEditor.cpp
     src/PluginEditor.h
 )
+
+# ---------------- Tests (Phase 2b) ----------------
+# Lightweight console tests for Timing utilities
+add_executable(MetroGnome_Tests
+    src/TimingTests.cpp
+    src/Timing.h
+)
+
+# No JUCE dependency needed; pure C++17
+set_target_properties(MetroGnome_Tests PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES)
+
+include(CTest)
+enable_testing()
+add_test(NAME TimingTests COMMAND MetroGnome_Tests)
