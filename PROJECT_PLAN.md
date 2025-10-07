@@ -29,6 +29,8 @@ Acceptance Criteria
 - Loads in a VST3 validator or DAW without errors; passes audio through or emits silence deterministically.
 Risks & Mitigation
 - CMake misconfig → start from JUCE examples; keep flags minimal.
+Status
+- Completed on 2025-10-06 20:42 (local). JUCE updated to 8.0.10; build succeeds for MetroGnome_VST3.
 
 ## Phase 2 – Host Sync & Timing Engine
 Goals
