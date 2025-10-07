@@ -39,6 +39,10 @@ juce_add_plugin(MetroGnome
 juce_generate_juce_header(MetroGnome)
 
 # Add sources
+# UI assets are embedded via an existing binary data target (MetroGnome_rc_lib)
+# If this target is provided by another CMake file/preset, just link to it below.
+
+# Plugin sources
 target_sources(MetroGnome PRIVATE
     src/PluginProcessor.cpp
     src/PluginProcessor.h
@@ -46,6 +50,21 @@ target_sources(MetroGnome PRIVATE
     src/PluginEditor.h
     src/Timing.h
 )
+
+# Embed in-repo assets as a fallback (namespaced to avoid clashes)
+juce_add_binary_data(MetroGnomeAssets
+    HEADER_NAME MetroAssets.h
+    NAMESPACE MetroAssets
+    SOURCES
+        assets/images/metrognome-a.png
+        assets/images/metrognome-b.png
+)
+
+# Link embedded resources libraries
+# External resource lib (if it exists in this build)
+target_link_libraries(MetroGnome PRIVATE MetroGnome_rc_lib)
+# Our in-repo assets fallback
+target_link_libraries(MetroGnome PRIVATE MetroGnomeAssets)
 
 # Recommended JUCE compile-time flags for smaller, RT-safe build
 target_compile_definitions(MetroGnome PRIVATE
