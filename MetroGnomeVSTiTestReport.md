@@ -126,14 +126,13 @@ First successful test run of the MetroGnome VSTi plugin completed. The plugin lo
 3. Fix Enable/Disable All buttons (ISSUE-006) — Completed
 
 ### Phase 2: Core Enhancements
-1. Add independent time signature control (ENHANCEMENT-004)
-2. Implement sequencer step toggle buttons (ENHANCEMENT-005)
-3. Implement single-row sequencer with variable sizing (ENHANCEMENT-007)
+1. Add independent time signature control (ENHANCEMENT-004) — Completed
+2. Implement sequencer step toggle buttons (ENHANCEMENT-005) — Completed
+3. Implement single-row sequencer with variable sizing (ENHANCEMENT-007) — Completed
 
 ### Phase 3: UI Polish
 1. Remove MIDI Learn/Clear buttons (ENHANCEMENT-003)
 2. Improve rotary control visuals (ENHANCEMENT-008)
-3. Implement left-column input layout (ENHANCEMENT-009)
 
 ---
 
