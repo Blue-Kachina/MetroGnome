@@ -105,16 +105,23 @@ Status
 
 ## Phase 5 – UI/UX (Initial)
 Goals
-- Functional editor with step blocks and core controls.
+- Functional editor with step blocks, core controls, and studio hardware aesthetic.
 Deliverables
+- Fixed-size plugin window with minimum working surface of 536x1024 pixels
+- Background image system supporting `assets/images/metrognome-*.png`
 - Step block grid with illuminated enabled state
 - Rotary controls: step count, subdivision/time signature numerator, volume
 - Buttons: Enable All, Disable All
+- Toggle: Dance mode (alternates background image per sequencer step, regardless of step enabled state)
 Acceptance Criteria
 - UI reflects parameter state; operations are smooth at 60 FPS.
+- Fixed window size displays background images correctly at 536x1024 minimum.
+- Dance toggle animates background per step with no frame drops.
 - Keyboard focus and accessibility sane defaults.
+- Controls styled to resemble professional studio hardware.
 Risks & Mitigation
-- Repaints causing CPU spikes → throttle visuals, avoid heavy allocs in paint.
+- Repaints causing CPU spikes → throttle visuals, avoid heavy allocs in paint; preload background images.
+- Image loading latency → preload assets during editor construction, not in paint().
 
 ## Phase 6 – State, Automation, MIDI Learn
 Goals
