@@ -187,15 +187,37 @@ Status
 
 ### Phase 9.2 – macOS Distribution (Pkg or Instructions)
 Goals
-- Provide either a signed pkg installer or clear instructions for copying MetroGnome.vst3.
+- Provide either a signed pkg installer or clear instructions for copying MetroGnome.vst3 with minimal friction.
 Deliverables
-- If pkg: productbuild pkg that installs to /Library/Audio/Plug-Ins/VST3
-- Otherwise: INSTALL-macOS.md with step‑by‑step copy instructions and Gatekeeper notes
+- If pkg: productbuild-generated pkg that installs to /Library/Audio/Plug-Ins/VST3 (system-wide)
+- Otherwise: INSTALL-macOS.md with step‑by‑step copy instructions and Gatekeeper/quarantine notes
+- Smoke test notes for at least one host (Reaper for macOS; AU wrapper/Logic optional)
 Acceptance Criteria
-- Plugin is visible in Logic Pro (via AU wrapper test if applicable) or a VST3 host (e.g., Reaper)
-- Minimal user steps (≤3)
+- Plugin is visible in a macOS host that supports VST3 (e.g., Reaper) after following the documented steps
+- Minimal user steps (≤3) for the chosen path (pkg or manual copy)
+- Clear remediation for Gatekeeper/quarantine if applicable
 Risks & Mitigation
-- Signing/Notarization delays → ship instructions first; pkg later when signing is available
+- Signing/Notarization delays → ship instructions first; add signed/notarized pkg later when certificates are available
+- Host cache behavior varies → include cache refresh instructions per host
+Prerequisites
+- macOS 12+ test machine (Intel or Apple Silicon) with a VST3-capable host installed
+- Xcode Command Line Tools (for codesign/productbuild availability)
+- Optional: Apple Developer ID Application certificate for signing (when ready)
+Tasks
+- Decide initial path: manual instructions first; pkg tracked for later when signing is available
+- Draft INSTALL-macOS.md with:
+  - Exact install paths: ~/Library/Audio/Plug-Ins/VST3 (user) and /Library/Audio/Plug-Ins/VST3 (system)
+  - How to locate the built MetroGnome.vst3 in the build tree
+  - How to remove quarantine if needed (xattr -d com.apple.quarantine <bundle>)
+  - How to refresh host plugin cache (Reaper: clear cache/rescan; general: restart host)
+- Verify discovery in Reaper (macOS):
+  - Copy MetroGnome.vst3 to ~/Library/Audio/Plug-Ins/VST3
+  - Launch Reaper → Preferences → Plug-ins → VST → Clear cache/rescan → confirm presence
+- Optional: AU wrapper check for Logic (document if attempted)
+Notes
+- For pkg later: use packagesutil/productbuild with component at /Library/Audio/Plug-Ins/VST3; signing + notarization tracked in Phase 10
+Status
+- In progress — 2025-10-07 12:52 (local)
 
 ### Phase 9.3 – Linux Packaging/Instructions
 Goals

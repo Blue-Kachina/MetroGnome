@@ -118,7 +118,8 @@ install(TARGETS MetroGnome DESTINATION ".")
 
 # Basic package metadata
 set(CPACK_PACKAGE_NAME "MetroGnome")
-set(CPACK_PACKAGE_VENDOR "MetroGnome")
+# Manufacturer shown in MSI (ARP): use company name
+set(CPACK_PACKAGE_VENDOR "Otitis Media")
 set(CPACK_PACKAGE_CONTACT "devnull@example.com")
 set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
