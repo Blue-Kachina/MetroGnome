@@ -100,6 +100,8 @@ Acceptance Criteria
 - CPU usage is low at typical rates (48/96 kHz).
 Risks & Mitigation
 - Denormals → flush‑to‑zero; use simple DSP without feedback paths.
+Status
+- Completed on 2025-10-06 22:34 (local): Added Volume parameter and a RT-safe click synth (short 3 kHz sine burst with exponential decay). Zero-latency retrigger at gate sample; stereo rendering; buffer cleared at block start. 
 
 ## Phase 5 – UI/UX (Initial)
 Goals
@@ -189,5 +191,5 @@ Acceptance Criteria
 - M10: 0.1.0 release (Phase 10)
 
 ## Next Actions
-- Verify Phase 3 gate behavior in at least one DAW (e.g., Reaper) via debug logs; ensure deterministic, phase-accurate triggers at step boundaries.
-- Proceed to Phase 4 – Sound Generator: implement click rendering on gates and add volume control.
+- Audition Phase 4 clicks in a DAW at multiple tempos/sample rates; verify zero-latency triggers land at grid and CPU remains low.
+- Proceed to Phase 5 – UI/UX: add basic editor with step grid, step count, and volume control bindings.

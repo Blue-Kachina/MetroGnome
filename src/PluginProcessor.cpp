@@ -9,6 +9,7 @@
 static constexpr const char* kParamStepCount = "stepCount";
 static constexpr const char* kParamEnableAll = "enableAll";
 static constexpr const char* kParamDisableAll = "disableAll";
+static constexpr const char* kParamVolume = "volume";
 static juce::String stepEnabledId (int idx) { return juce::String("stepEnabled_") + juce::String(idx + 1); }
 
 //==============================================================================
@@ -31,6 +32,7 @@ MetroGnomeAudioProcessor::MetroGnomeAudioProcessor()
     disableAllParam = apvts.getRawParameterValue(kParamDisableAll);
     for (int i = 0; i < 16; ++i)
         stepEnabledParams[i] = apvts.getRawParameterValue(stepEnabledId(i).toRawUTF8());
+    volumeParam = apvts.getRawParameterValue(kParamVolume);
 }
 
 MetroGnomeAudioProcessor::~MetroGnomeAudioProcessor() = default;
@@ -45,6 +47,23 @@ void MetroGnomeAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     // Initialize timing subdivisions to current step count
     const int stepCount = static_cast<int>(stepCountParam ? stepCountParam->load() : 8.0f);
     timing.setSubdivisionsPerBar(juce::jlimit(1, 16, stepCount));
+
+    // Initialize click synth parameters (short sine burst with exponential decay)
+    const double clickMs = 10.0; // 10 ms max length
+    clickMaxSamples = static_cast<int>(std::round((clickMs * 0.001) * sampleRate));
+    if (clickMaxSamples < 1) clickMaxSamples = 1;
+    const double decayMs = 4.0; // ~4 ms decay constant
+    const double tauSamples = (decayMs * 0.001) * sampleRate;
+    if (tauSamples > 0.0)
+        clickDecay = std::exp(-1.0 / tauSamples);
+    else
+        clickDecay = 0.0;
+    const double freq = 3000.0; // 3 kHz click tone
+    sinePhase = 0.0;
+    sinePhaseInc = juce::MathConstants<double>::twoPi * freq / std::max(1.0, sampleRate);
+    clickActive = false;
+    clickEnv = 0.0;
+    clickSampleIndex = 0;
 }
 
 void MetroGnomeAudioProcessor::releaseResources()
@@ -70,6 +89,9 @@ bool MetroGnomeAudioProcessor::isBusesLayoutSupported (const BusesLayout& layout
 void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& /*midiMessages*/)
 {
     juce::ScopedNoDenormals noDenormals;
+
+    // Clear buffer at block start; we fully synthesize output
+    buffer.clear();
 
     // Keep timing engine subdivisions synced with step count parameter (read atomically)
     const int stepCount = juce::jlimit(1, 16, static_cast<int>(stepCountParam ? stepCountParam->load() : 8.0f));
@@ -138,8 +160,48 @@ void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         }
     }
 
-    // Emit silence deterministically for now (Phase 4 will render clicks on gate)
-    buffer.clear();
+    // Render click if active and/or retrigger at gate sample within this block (zero-latency)
+    const int numSamples = buffer.getNumSamples();
+    const int numChans = buffer.getNumChannels();
+    const float vol = juce::jlimit(0.0f, 1.0f, volumeParam ? volumeParam->load() : 0.8f);
+
+    for (int s = 0; s < numSamples; ++s)
+    {
+        if (lastGateSample == s)
+        {
+            // Retrigger click envelope exactly at gate sample within this block
+            clickActive = true;
+            clickEnv = 1.0;
+            clickSampleIndex = 0;
+            sinePhase = 0.0; // reset for sharp transient
+        }
+
+        float sampleValue = 0.0f;
+        if (clickActive)
+        {
+            const float tone = static_cast<float>(std::sin(sinePhase));
+            sinePhase += sinePhaseInc;
+            if (sinePhase >= juce::MathConstants<double>::twoPi)
+                sinePhase -= juce::MathConstants<double>::twoPi;
+
+            const float env = static_cast<float>(clickEnv);
+            sampleValue = env * tone * vol;
+
+            // advance envelope
+            clickEnv *= clickDecay;
+            ++clickSampleIndex;
+            if (clickSampleIndex >= clickMaxSamples || clickEnv < 1.0e-4)
+                clickActive = false;
+        }
+
+        if (sampleValue != 0.0f)
+        {
+            for (int ch = 0; ch < numChans; ++ch)
+            {
+                buffer.getWritePointer(ch)[s] += sampleValue;
+            }
+        }
+    }
 }
 
 //==============================================================================
@@ -177,6 +239,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout MetroGnomeAudioProcessor::cr
     // Action buttons (momentary)
     params.push_back(std::make_unique<juce::AudioParameterBool>(kParamEnableAll, "Enable All", false));
     params.push_back(std::make_unique<juce::AudioParameterBool>(kParamDisableAll, "Disable All", false));
+
+    // Output level
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(kParamVolume, "Volume",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.0f, 1.0f), 0.8f));
 
     for (int i = 0; i < 16; ++i)
     {

@@ -55,11 +55,21 @@ private:
     std::array<std::atomic<float>*, 16> stepEnabledParams{};
     std::atomic<float>* enableAllParam = nullptr;
     std::atomic<float>* disableAllParam = nullptr;
+    std::atomic<float>* volumeParam = nullptr; // 0..1 linear volume
 
     // Sequencer last gate (for Phase 4 triggering), -1 means none this block
     int lastGateSample = -1;
     int lastGateStepIndex = -1;
     int lastGateBarIndex = -1;
+
+    // Simple click synthesizer state (RT-safe, no allocations)
+    bool clickActive = false;
+    int clickSampleIndex = 0;
+    int clickMaxSamples = 0;   // computed from sample rate (e.g., 10 ms)
+    double clickEnv = 0.0;     // exponential decay envelope
+    double clickDecay = 0.999; // per-sample multiplier
+    double sinePhase = 0.0;
+    double sinePhaseInc = 0.0; // 3 kHz default
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MetroGnomeAudioProcessor)
 };
