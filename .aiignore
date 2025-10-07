@@ -10,10 +10,10 @@
 .gitmodules
 
 # IDE/project settings
-.idea/
-.vscode/
-.vs/
-*.code-workspace
+#.idea/
+#.vscode/
+#.vs/
+#*.code-workspace
 
 # OS junk
 .DS_Store

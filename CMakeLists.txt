@@ -96,22 +96,24 @@ add_test(NAME TimingTests COMMAND MetroGnome_Tests)
 # Install the VST3 bundle into the standard platform-specific location.
 # We set the packaging install prefix so CPack installers deploy directly to host-discoverable paths.
 if (WIN32)
-    # Windows standard VST3 location
-    # Use per-user VST3 location to avoid UAC/admin requirements
+    # Windows per-user VST3 location (no admin required)
     set(VST3_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/Programs/Common/VST3")
     set(CPACK_GENERATOR "WIX;ZIP")
     # Stable GUID required by WiX to support upgrades — do not change after release
     set(CPACK_WIX_UPGRADE_GUID "8E6A2E3A-7B7B-4DBE-9D57-1D5F8B3D9C12")
 elseif(APPLE)
-    # macOS standard VST3 location
-    set(VST3_INSTALL_PREFIX "/Library/Audio/Plug-Ins/VST3")
+    # macOS per-user VST3 location (no sudo required)
+    set(VST3_INSTALL_PREFIX "$ENV{HOME}/Library/Audio/Plug-Ins/VST3")
     set(CPACK_GENERATOR "productbuild;DragNDrop")
 else()
-    # Linux: prefer user scope to avoid root requirements
-    # Use a relative prefix so TGZ/ZIP can be extracted into the user's home directory (~)
-    # Users should extract the archive in $HOME to install into ~/.vst3
-    set(VST3_INSTALL_PREFIX ".vst3")
+    # Linux per-user VST3 location
+    set(VST3_INSTALL_PREFIX "$ENV{HOME}/.vst3")
     set(CPACK_GENERATOR "TGZ;ZIP")
+endif()
+
+# Default install prefix: if user didn't override, install straight to the VST3 folder
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${VST3_INSTALL_PREFIX}" CACHE PATH "Install path prefix" FORCE)
 endif()
 
 # Install rules: place the plugin at the root of the install prefix
@@ -119,6 +121,12 @@ endif()
 install(TARGETS MetroGnome DESTINATION ".")
 # Also install LICENSE so archives/installers include it
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE DESTINATION ".")
+
+# Convenience target: run installation from within IDEs (CLion)
+add_custom_target(deploy
+    COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}"
+    COMMENT "Installing MetroGnome to ${CMAKE_INSTALL_PREFIX}"
+)
 
 # Basic package metadata
 set(CPACK_PACKAGE_NAME "MetroGnome")
