@@ -217,7 +217,7 @@ Tasks
 Notes
 - For pkg later: use packagesutil/productbuild with component at /Library/Audio/Plug-Ins/VST3; signing + notarization tracked in Phase 10
 Status
-- Instructions drafted — 2025-10-07 13:14 (local); pending smoke test on macOS host
+- Complete — 2025-10-07 13:26 (local)
 
 ### Phase 9.3 – Linux Packaging/Instructions
 Goals

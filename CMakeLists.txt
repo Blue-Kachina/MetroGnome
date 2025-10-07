@@ -108,7 +108,9 @@ elseif(APPLE)
     set(CPACK_GENERATOR "productbuild;DragNDrop")
 else()
     # Linux: prefer user scope to avoid root requirements
-    set(VST3_INSTALL_PREFIX "$ENV{HOME}/.vst3")
+    # Use a relative prefix so TGZ/ZIP can be extracted into the user's home directory (~)
+    # Users should extract the archive in $HOME to install into ~/.vst3
+    set(VST3_INSTALL_PREFIX ".vst3")
     set(CPACK_GENERATOR "TGZ;ZIP")
 endif()
 
