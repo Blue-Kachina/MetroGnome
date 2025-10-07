@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include <array>
+#include <atomic>
 #include "Timing.h"
 
 class MetroGnomeAudioProcessor : public juce::AudioProcessor
@@ -24,7 +25,7 @@ public:
 
     const juce::String getName() const override { return JucePlugin_Name; }
 
-    bool acceptsMidi() const override { return false; }
+    bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
     double getTailLengthSeconds() const override { return 0.0; }
@@ -44,6 +45,17 @@ public:
     // UI helpers
     int getCurrentStepIndex() const noexcept { return currentStepIndex.load(); }
 
+    // MIDI learn API (UI thread)
+    void armMidiLearn (const juce::String& paramID);
+    void cancelMidiLearn();
+    bool hasPendingMidiLearn() const noexcept { return pendingLearnCC.load() >= 0; }
+    // Applies pending learned CC to current target; returns true if applied
+    bool commitPendingMidiLearn();
+    // Clear stored mapping for a parameter
+    void clearMidiMapping (const juce::String& paramID);
+    // Query mapped CC for UI (-1 if none)
+    int getMappedCC (const juce::String& paramID) const;
+
 private:
     // Parameter layout
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
@@ -60,6 +72,17 @@ private:
     std::atomic<float>* disableAllParam = nullptr;
     std::atomic<float>* volumeParam = nullptr; // 0..1 linear volume
     std::atomic<float>* danceModeParam = nullptr; // UI-only toggle
+
+    // MIDI learn state (real-time safe communication)
+    std::atomic<bool> midiLearnArmed { false };
+    juce::String midiLearnTargetId; // set on message thread
+    std::atomic<int> pendingLearnCC { -1 }; // set in audio thread
+
+    // Fast CC->parameter map for audio thread (size 128)
+    std::array<std::atomic<juce::RangedAudioParameter*>, 128> ccToParam{};
+
+    // Helpers (message thread)
+    void rebuildMidiMapFromState();
 
     // Sequencer last gate (for Phase 4 triggering), -1 means none this block
     int lastGateSample = -1;

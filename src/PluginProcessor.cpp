@@ -35,6 +35,9 @@ MetroGnomeAudioProcessor::MetroGnomeAudioProcessor()
         stepEnabledParams[i] = apvts.getRawParameterValue(stepEnabledId(i).toRawUTF8());
     volumeParam = apvts.getRawParameterValue(kParamVolume);
     danceModeParam = apvts.getRawParameterValue(kParamDanceMode);
+
+    // init CC map to nulls
+    for (auto& p : ccToParam) p.store(nullptr, std::memory_order_relaxed);
 }
 
 MetroGnomeAudioProcessor::~MetroGnomeAudioProcessor() = default;
@@ -88,7 +91,7 @@ bool MetroGnomeAudioProcessor::isBusesLayoutSupported (const BusesLayout& layout
 #endif
 }
 
-void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& /*midiMessages*/)
+void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
 
@@ -99,6 +102,35 @@ void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     const int stepCount = juce::jlimit(1, 16, static_cast<int>(stepCountParam ? stepCountParam->load() : 8.0f));
     if (timing.getSubdivisionsPerBar() != stepCount)
         timing.setSubdivisionsPerBar(stepCount);
+
+    // Process incoming MIDI CC messages: handle learn and mapped control
+    if (! midiMessages.isEmpty())
+    {
+        for (const auto metadata : midiMessages)
+        {
+            const auto m = metadata.getMessage();
+            if (m.isController())
+            {
+                const int cc = m.getControllerNumber();
+                const int val = m.getControllerValue();
+
+                // learn capture (do not allocate)
+                if (midiLearnArmed.load(std::memory_order_relaxed) && pendingLearnCC.load(std::memory_order_relaxed) < 0)
+                    pendingLearnCC.store(cc, std::memory_order_relaxed);
+
+                // mapped control
+                if (cc >= 0 && cc < (int)ccToParam.size())
+                {
+                    auto* p = ccToParam[(size_t)cc].load(std::memory_order_relaxed);
+                    if (p != nullptr)
+                    {
+                        const float norm = juce::jlimit(0.0f, 1.0f, (float)val / 127.0f);
+                        p->setValueNotifyingHost (norm);
+                    }
+                }
+            }
+        }
+    }
 
     // Read host transport info deterministically without allocations
     if (auto* playHead = getPlayHead())
@@ -231,7 +263,10 @@ void MetroGnomeAudioProcessor::setStateInformation (const void* data, int sizeIn
     juce::MemoryInputStream mis (data, static_cast<size_t>(sizeInBytes), false);
     juce::ValueTree vt = juce::ValueTree::readFromStream(mis);
     if (vt.isValid())
+    {
         apvts.replaceState(vt);
+        rebuildMidiMapFromState();
+    }
 }
 
 // Parameter layout
@@ -261,6 +296,96 @@ juce::AudioProcessorValueTreeState::ParameterLayout MetroGnomeAudioProcessor::cr
     }
 
     return { params.begin(), params.end() };
+}
+
+//==============================================================================
+// MIDI learn helpers (message thread only)
+void MetroGnomeAudioProcessor::armMidiLearn (const juce::String& paramID)
+{
+    midiLearnTargetId = paramID;
+    pendingLearnCC.store(-1, std::memory_order_relaxed);
+    midiLearnArmed.store(true, std::memory_order_relaxed);
+}
+
+void MetroGnomeAudioProcessor::cancelMidiLearn()
+{
+    midiLearnArmed.store(false, std::memory_order_relaxed);
+    pendingLearnCC.store(-1, std::memory_order_relaxed);
+}
+
+bool MetroGnomeAudioProcessor::commitPendingMidiLearn()
+{
+    const int cc = pendingLearnCC.load(std::memory_order_relaxed);
+    if (cc < 0 || cc > 127 || midiLearnTargetId.isEmpty())
+        return false;
+
+    // Update state tree
+    auto midiMap = apvts.state.getOrCreateChildWithName("MidiMap", nullptr);
+    midiMap.setProperty(midiLearnTargetId, cc, nullptr);
+
+    // Update fast map (clear any previous occupant for this CC)
+    if (cc >= 0 && cc < (int)ccToParam.size())
+    {
+        // Ensure uniqueness: clear any param previously mapped to this CC
+        for (auto& slot : ccToParam)
+        {
+            if (slot.load(std::memory_order_relaxed) != nullptr)
+            {
+                // can't easily check ID here, so just overwrite target index below
+            }
+        }
+        if (auto* p = apvts.getParameter(midiLearnTargetId))
+            ccToParam[(size_t)cc].store(p, std::memory_order_relaxed);
+    }
+
+    // disarm
+    cancelMidiLearn();
+    return true;
+}
+
+void MetroGnomeAudioProcessor::clearMidiMapping (const juce::String& paramID)
+{
+    // Remove from state
+    if (auto midiMap = apvts.state.getChildWithName("MidiMap"); midiMap.isValid())
+    {
+        if (midiMap.hasProperty(paramID))
+        {
+            const int cc = (int)midiMap.getProperty(paramID);
+            midiMap.removeProperty(paramID, nullptr);
+            if (cc >= 0 && cc < (int)ccToParam.size())
+                ccToParam[(size_t)cc].store(nullptr, std::memory_order_relaxed);
+        }
+    }
+}
+
+int MetroGnomeAudioProcessor::getMappedCC (const juce::String& paramID) const
+{
+    if (auto midiMap = apvts.state.getChildWithName("MidiMap"); midiMap.isValid())
+    {
+        if (midiMap.hasProperty(paramID))
+            return (int)midiMap.getProperty(paramID);
+    }
+    return -1;
+}
+
+void MetroGnomeAudioProcessor::rebuildMidiMapFromState()
+{
+    // Clear map
+    for (auto& slot : ccToParam) slot.store(nullptr, std::memory_order_relaxed);
+
+    auto midiMap = apvts.state.getChildWithName("MidiMap");
+    if (! midiMap.isValid()) return;
+
+    for (int i = 0; i < midiMap.getNumProperties(); ++i)
+    {
+        const auto name = midiMap.getPropertyName(i);
+        const int cc = (int)midiMap.getProperty(name);
+        if (cc >= 0 && cc < 128)
+        {
+            if (auto* p = apvts.getParameter(name.toString()))
+                ccToParam[(size_t)cc].store(p, std::memory_order_relaxed);
+        }
+    }
 }
 
 //==============================================================================

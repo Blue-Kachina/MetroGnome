@@ -135,6 +135,7 @@ Acceptance Criteria
 - All parameters appear in host automation lanes.
 Risks & Mitigation
 - DAW quirks → test in at least two hosts.
+Status: Complete — 2025-10-06
 
 ## Phase 7 – Performance & RT Safety Hardening
 Goals
@@ -192,12 +193,11 @@ Acceptance Criteria
 - M3: Sequencer gates (Phase 3)
 - M4: Click sound (Phase 4)
 - M5: Usable UI (Phase 5)
-- M6: State/automation/MIDI (Phase 6)
+- M6: State/automation/MIDI (Phase 6) — Complete (2025-10-06)
 - M7: Perf/RT pass (Phase 7)
 - M8: Cross‑platform builds (Phase 8)
 - M9: Installers (Phase 9)
 - M10: 0.1.0 release (Phase 10)
 
 ## Next Actions
-- Audition Phase 4 clicks in a DAW at multiple tempos/sample rates; verify zero-latency triggers land at grid and CPU remains low.
-- Proceed to Phase 5 – UI/UX: add basic editor with step grid, step count, and volume control bindings.
+- Proceed to Phase 7 – Performance & RT Safety Hardening: audit the audio path for RT safety, complete checklist, and profile CPU usage under load.

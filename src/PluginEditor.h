@@ -30,6 +30,12 @@ private:
     juce::ToggleButton danceToggle { "Dance" };
     juce::OwnedArray<juce::ToggleButton> stepToggles; // 16 toggles
 
+    // Minimal MIDI learn controls
+    juce::TextButton learnVolumeBtn { "MIDI Learn: Volume" };
+    juce::TextButton clearVolumeBtn { "Clear" };
+    juce::TextButton learnStepsBtn { "MIDI Learn: Steps" };
+    juce::TextButton clearStepsBtn { "Clear" };
+
     // APVTS attachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> stepsAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> volumeAttachment;

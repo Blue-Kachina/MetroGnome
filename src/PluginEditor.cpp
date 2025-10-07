@@ -74,6 +74,31 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
     addAndMakeVisible(danceToggle);
     danceAttachment = std::make_unique<APVTS::ButtonAttachment>(apvts, kParamDanceMode, danceToggle);
 
+    // Minimal MIDI learn UI
+    addAndMakeVisible(learnVolumeBtn);
+    addAndMakeVisible(clearVolumeBtn);
+    addAndMakeVisible(learnStepsBtn);
+    addAndMakeVisible(clearStepsBtn);
+
+    learnVolumeBtn.onClick = [this]
+    {
+        processor.armMidiLearn(kParamVolume);
+        learnVolumeBtn.setButtonText("Listening… move a CC");
+    };
+    clearVolumeBtn.onClick = [this]
+    {
+        processor.clearMidiMapping(kParamVolume);
+    };
+    learnStepsBtn.onClick = [this]
+    {
+        processor.armMidiLearn(kParamStepCount);
+        learnStepsBtn.setButtonText("Listening… move a CC");
+    };
+    clearStepsBtn.onClick = [this]
+    {
+        processor.clearMidiMapping(kParamStepCount);
+    };
+
     // Step toggles 16
     for (int i = 0; i < 16; ++i)
     {
@@ -196,11 +221,21 @@ void MetroGnomeAudioProcessorEditor::resized()
     auto mid = area.removeFromTop(360); // step grid lives in paint overlay
     juce::ignoreUnused(mid);
 
-    auto bottom = area.removeFromBottom(120);
+    auto bottom = area.removeFromBottom(160);
     auto buttons = bottom.removeFromTop(40);
     enableAllBtn.setBounds(buttons.removeFromLeft(140));
     disableAllBtn.setBounds(buttons.removeFromLeft(140).withX(enableAllBtn.getRight() + 10));
     danceToggle.setBounds(bottom.removeFromTop(30));
+
+    // MIDI learn row 1 (Volume)
+    auto learnRow1 = bottom.removeFromTop(30);
+    learnVolumeBtn.setBounds(learnRow1.removeFromLeft(200));
+    clearVolumeBtn.setBounds(learnRow1.removeFromLeft(60).withX(learnVolumeBtn.getRight() + 8));
+
+    // MIDI learn row 2 (Steps)
+    auto learnRow2 = bottom.removeFromTop(30);
+    learnStepsBtn.setBounds(learnRow2.removeFromLeft(200));
+    clearStepsBtn.setBounds(learnRow2.removeFromLeft(60).withX(learnStepsBtn.getRight() + 8));
 
     // Place step toggles invisibly aligned below grid for accessibility; we still want keyboard toggling
     auto gridArea = getLocalBounds().reduced(20).removeFromTop(300).withY(300);
@@ -229,5 +264,20 @@ void MetroGnomeAudioProcessorEditor::resized()
 
 void MetroGnomeAudioProcessorEditor::timerCallback()
 {
+    // Commit pending MIDI learn (from audio thread)
+    if (processor.hasPendingMidiLearn())
+    {
+        if (processor.commitPendingMidiLearn())
+        {
+            // update button texts with mapped CC
+            const int volCC = processor.getMappedCC(kParamVolume);
+            const int stepCC = processor.getMappedCC(kParamStepCount);
+            if (volCC >= 0) learnVolumeBtn.setButtonText(juce::String("MIDI: Volume (CC ") + juce::String(volCC) + ")");
+            else            learnVolumeBtn.setButtonText("MIDI Learn: Volume");
+            if (stepCC >= 0) learnStepsBtn.setButtonText(juce::String("MIDI: Steps (CC ") + juce::String(stepCC) + ")");
+            else             learnStepsBtn.setButtonText("MIDI Learn: Steps");
+        }
+    }
+
     repaint();
 }
