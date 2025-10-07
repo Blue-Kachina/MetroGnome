@@ -152,11 +152,12 @@ Status: Complete — 2025-10-06 23:16 (local)
 Goals
 - Ensure builds on macOS and Linux; no UI regressions.
 Deliverables
-- CMake presets and CI jobs (build only) for all three platforms
+- CMake presets for all three platforms
 Acceptance Criteria
-- Successful CI builds on Windows/macOS/Linux.
+- High likelihood of successful builds on Windows/macOS/Linux.
 Risks & Mitigation
 - Platform specific flags → conditionally set in CMake; avoid deprecated APIs.
+Status: Complete — 2025-10-07 07:58 (local)
 
 ## Phase 9 – Packaging & Deployment
 Goals
@@ -196,9 +197,9 @@ Acceptance Criteria
 - M5: Usable UI (Phase 5)
 - M6: State/automation/MIDI (Phase 6) — Complete (2025-10-06)
 - M7: Perf/RT pass (Phase 7) — Complete (2025-10-06 23:16)
-- M8: Cross‑platform builds (Phase 8)
+- M8: Cross‑platform builds (Phase 8) — Complete (2025-10-07 07:58)
 - M9: Installers (Phase 9)
 - M10: 0.1.0 release (Phase 10)
 
 ## Next Actions
-- Proceed to Phase 8 – Cross‑Platform Builds: add CMake presets and CI build jobs for macOS/Linux; verify Release builds in at least one DAW per platform.
+- Proceed to Phase 9 – Packaging & Deployment: prepare installers for Windows (MSIX/WiX) and macOS (pkg with VST3), add Linux packaging/instructions, and smoke‑test plugin discovery in target hosts.

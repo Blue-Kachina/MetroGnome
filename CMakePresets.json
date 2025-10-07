@@ -1,0 +1,69 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Kitware/CMake/master/Help/manual/presets/schema.json",
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "windows-vs2022",
+      "displayName": "Windows VS2022 (x64) Release",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "build/win-vs2022",
+      "cacheVariables": {
+        "CMAKE_SYSTEM_VERSION": "10.0",
+        "CMAKE_GENERATOR_PLATFORM": "x64"
+      }
+    },
+    {
+      "name": "macos-ninja-release",
+      "displayName": "macOS Ninja Release",
+      "generator": "Ninja",
+      "binaryDir": "build/macos-ninja-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "linux-ninja-release",
+      "displayName": "Linux Ninja Release",
+      "generator": "Ninja",
+      "binaryDir": "build/linux-ninja-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "windows-release",
+      "configurePreset": "windows-vs2022",
+      "configuration": "Release"
+    },
+    {
+      "name": "macos-release",
+      "configurePreset": "macos-ninja-release"
+    },
+    {
+      "name": "linux-release",
+      "configurePreset": "linux-ninja-release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "windows-ctest",
+      "configurePreset": "windows-vs2022",
+      "configuration": "Release"
+    },
+    {
+      "name": "macos-ctest",
+      "configurePreset": "macos-ninja-release"
+    },
+    {
+      "name": "linux-ctest",
+      "configurePreset": "linux-ninja-release"
+    }
+  ]
+}
