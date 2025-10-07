@@ -11,6 +11,8 @@ include(FetchContent)
 set(JUCE_COPY_PLUGIN_AFTER_BUILD OFF CACHE BOOL "Disable copy-after-build for plugins" FORCE)
 
 # Fetch JUCE using FetchContent (no global install required)
+# Also ensure JUCE does not add its own install() rules to our install step
+set(JUCE_ENABLE_INSTALL OFF CACHE BOOL "Disable JUCE self-install during our install step" FORCE)
 FetchContent_Declare(
     juce
     GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
@@ -116,15 +118,16 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${VST3_INSTALL_PREFIX}" CACHE PATH "Install path prefix" FORCE)
 endif()
 
-# Install rules: place the plugin at the root of the install prefix
-# Use generic DESTINATION for cross-platform; on Windows this installs the .vst3 directory under the prefix
-install(TARGETS MetroGnome DESTINATION ".")
+# Install rules: install the full VST3 bundle directory that JUCE generates
+# JUCE writes the correctly structured bundle to the artefacts directory
+# This ensures DAWs like Cubase see a .vst3 folder with Contents/... inside, not a flat file
+install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/MetroGnome_artefacts/$<CONFIG>/VST3/MetroGnome.vst3" DESTINATION "." COMPONENT MetroGnomePlugin)
 # Also install LICENSE so archives/installers include it
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE DESTINATION ".")
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE DESTINATION "." COMPONENT MetroGnomePlugin)
 
 # Convenience target: run installation from within IDEs (CLion)
 add_custom_target(deploy
-    COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}"
+    COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component MetroGnomePlugin
     COMMENT "Installing MetroGnome to ${CMAKE_INSTALL_PREFIX}"
 )
 

@@ -155,7 +155,8 @@ void MetroGnomeAudioProcessorEditor::loadBackgroundImages()
 void MetroGnomeAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // Choose background based on dance toggle and current step parity
-    const bool dance = processor.getAPVTS().getRawParameterValue(kParamDanceMode)->load() >= 0.5f;
+    const auto* dancePtr = processor.getAPVTS().getRawParameterValue(kParamDanceMode);
+    const bool dance = (dancePtr != nullptr) ? (dancePtr->load() >= 0.5f) : false;
     const int stepIdx = processor.getCurrentStepIndex();
     const bool even = (stepIdx % 2) == 0;
 
@@ -182,6 +183,11 @@ void MetroGnomeAudioProcessorEditor::paint (juce::Graphics& g)
     const int cellW = (gridArea.getWidth() - pad * (cols - 1)) / cols;
     const int cellH = (gridArea.getHeight() - pad * (rows - 1)) / rows;
 
+    // Safe default for step count if APVTS not yet initialised
+    int safeStepCount = 8;
+    if (const auto* sc = processor.getAPVTS().getRawParameterValue(kParamStepCount))
+        safeStepCount = juce::jlimit(1, 16, (int)sc->load());
+
     int idx = 0;
     for (int r = 0; r < rows; ++r)
     {
@@ -191,8 +197,11 @@ void MetroGnomeAudioProcessorEditor::paint (juce::Graphics& g)
             auto y = gridArea.getY() + r * (cellH + pad);
             juce::Rectangle<int> cell (x, y, cellW, cellH);
 
-            const bool enabled = processor.getAPVTS().getRawParameterValue(stepEnabledId(idx))->load() >= 0.5f;
-            const bool isCurrent = (idx == (stepIdx % juce::jmax(1, (int)processor.getAPVTS().getRawParameterValue(kParamStepCount)->load())));
+            bool enabled = false;
+            if (auto* p = processor.getAPVTS().getRawParameterValue(stepEnabledId(idx)))
+                enabled = p->load() >= 0.5f;
+
+            const bool isCurrent = (idx == (stepIdx % juce::jmax(1, safeStepCount)));
 
             auto color = enabled ? juce::Colours::limegreen : juce::Colours::darkred.darker(0.6f);
             if (isCurrent)
