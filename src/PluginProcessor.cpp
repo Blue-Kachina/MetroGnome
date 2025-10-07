@@ -19,9 +19,12 @@ MetroGnomeAudioProcessor::MetroGnomeAudioProcessor()
 MetroGnomeAudioProcessor::~MetroGnomeAudioProcessor() = default;
 
 //==============================================================================
-void MetroGnomeAudioProcessor::prepareToPlay (double /*sampleRate*/, int /*samplesPerBlock*/)
+void MetroGnomeAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // No dynamic allocations; ensure deterministic state.
+    timing.prepare(sampleRate, samplesPerBlock);
+    hostInfo.sampleRate = sampleRate;
+    timing.setSubdivisionsPerBar(4); // default quarter notes in 4/4
 }
 
 void MetroGnomeAudioProcessor::releaseResources()
@@ -47,7 +50,34 @@ bool MetroGnomeAudioProcessor::isBusesLayoutSupported (const BusesLayout& layout
 void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& /*midiMessages*/)
 {
     juce::ScopedNoDenormals noDenormals;
-    // Emit silence deterministically for now (Phase 1 acceptance: silent or pass-through).
+
+    // Read host transport info deterministically without allocations
+    if (auto* playHead = getPlayHead())
+    {
+        juce::AudioPlayHead::CurrentPositionInfo info;
+        if (playHead->getCurrentPosition (info))
+        {
+            // Always update play/stop state
+            hostInfo.isPlaying = info.isPlaying;
+
+            // Update known-good fields only; keep cached values if host omits (returns 0/<=0)
+            if (info.bpm > 0.0)
+                hostInfo.tempoBPM = info.bpm;
+
+            if (info.timeSigNumerator > 0)
+                hostInfo.timeSigNumerator = info.timeSigNumerator;
+
+            // PPQ: allow 0.0 at the exact start when playing; otherwise, if host provides non-zero, accept it.
+            if (info.isPlaying || info.ppqPosition != 0.0)
+                hostInfo.ppqPosition = info.ppqPosition;
+        }
+    }
+
+    // Compute subdivision crossing for this block (will be used by sequencer in Phase 3)
+    const auto crossing = timing.findFirstSubdivisionCrossing(hostInfo, buffer.getNumSamples());
+    (void)crossing; // placeholder until Phase 3 emits gates
+
+    // Emit silence deterministically for now (Phase 1/2 audio path remains silent)
     buffer.clear();
 }
 

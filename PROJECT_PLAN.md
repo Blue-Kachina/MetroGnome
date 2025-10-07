@@ -35,14 +35,40 @@ Status
 ## Phase 2 – Host Sync & Timing Engine
 Goals
 - Phase‑locked internal clock synchronized to host tempo and transport.
-Deliverables
-- Transport/tempo/PPQ reader; beat/bar subdivision math utilities
-- Unit tests for timing math (e.g., bar start alignment, subdivision at 1–64)
-Acceptance Criteria
-- Correct beat/bar indices vs. PPQ at various tempos and time signatures.
-- No allocations in processBlock; preallocated buffers/state.
-Risks & Mitigation
-- Host time signature variability → assume host tempo, implement independent numerator as requirement states; validate alignment logic.
+
+We will break Phase 2 into smaller, verifiable sub‑phases to reduce risk and isolate errors.
+
+Phase 2a – Host Transport Readout (PlayHead)
+- Deliverables
+  - Stable readout of isPlaying, bpm, ppqPosition, timeSigNumerator from host PlayHead
+  - Cached HostTransportInfo with sane defaults and no allocations in processBlock
+- Acceptance Criteria
+  - Values update correctly in play/stop; fall back to cached values if host omits fields
+  - No dynamic allocations in processBlock
+- Risks & Mitigation
+  - Some hosts omit fields → defensively keep last known valid values
+- Status
+  - Implemented on 2025-10-06 21:28 (local): processBlock reads PlayHead with caching and fallbacks; no allocations in audio thread.
+
+Phase 2b – Timing Math Utilities
+- Deliverables
+  - Bar/beat computation from PPQ
+  - Equal subdivision index and first‑crossing detection within a block
+  - Unit tests covering tempos (40–240 BPM), signatures (3–7 numerator), subdivisions (1–64)
+- Acceptance Criteria
+  - Correct bar/beat and subdivision indices across bar boundaries and exact‑boundary cases
+  - No allocations; pure functions where possible
+- Risks & Mitigation
+  - Floating‑point edge cases → epsilon nudges and tests around boundaries
+
+Phase 2c – Integration in Audio Path
+- Deliverables
+  - Wire timing utilities into processBlock; compute first subdivision crossing per block
+  - Block‑level outputs remain silent (sequencer arrives in Phase 3)
+- Acceptance Criteria
+  - No regressions in build/load; CPU stable; timing values observable via debug/logs when enabled
+- Risks & Mitigation
+  - DAW differences → verify in at least two hosts (e.g., Reaper, VST3 validator)
 
 ## Phase 3 – Step Sequencer Core
 Goals
@@ -157,5 +183,5 @@ Acceptance Criteria
 - M10: 0.1.0 release (Phase 10)
 
 ## Next Actions
-- Confirm scope and ordering align with your expectations.
-- Proceed with Phase 1 by adding minimal src skeleton to satisfy current CMake or adjust CMake to avoid missing sources until scaffolding is added.
+- Confirm Phase 2a implementation meets acceptance criteria in at least one DAW (e.g., Reaper) via debug inspection. 
+- Proceed to Phase 2b – Timing Math Utilities: add bar/beat and subdivision computations with unit‑style tests.

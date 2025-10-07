@@ -42,6 +42,7 @@ target_sources(MetroGnome PRIVATE
     src/PluginProcessor.h
     src/PluginEditor.cpp
     src/PluginEditor.h
+    src/Timing.h
 )
 
 # Recommended JUCE compile-time flags for smaller, RT-safe build

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "Timing.h"
 
 class MetroGnomeAudioProcessor : public juce::AudioProcessor
 {
@@ -37,5 +38,9 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
 private:
+    // Timing engine and cached host info (preallocated, no dynamic work in processBlock)
+    metrog::TimingEngine timing;
+    metrog::HostTransportInfo hostInfo;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MetroGnomeAudioProcessor)
 };
