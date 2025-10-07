@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-test:
+    name: Build and Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Ninja (macOS/Linux)
+        if: runner.os != 'Windows'
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: cmake --preset windows-vs2022
+
+      - name: Build (Windows Release)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: cmake --build --preset windows-release --parallel
+
+      - name: Test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ctest --preset windows-ctest --output-on-failure
+
+      - name: Configure (macOS)
+        if: runner.os == 'macOS'
+        run: cmake --preset macos-ninja-release
+
+      - name: Build (macOS Release)
+        if: runner.os == 'macOS'
+        run: cmake --build --preset macos-release --parallel
+
+      - name: Test (macOS)
+        if: runner.os == 'macOS'
+        run: ctest --preset macos-ctest --output-on-failure
+
+      - name: Configure (Linux)
+        if: runner.os == 'Linux'
+        run: cmake --preset linux-ninja-release
+
+      - name: Build (Linux Release)
+        if: runner.os == 'Linux'
+        run: cmake --build --preset linux-release --parallel
+
+      - name: Test (Linux)
+        if: runner.os == 'Linux'
+        run: ctest --preset linux-ctest --output-on-failure
