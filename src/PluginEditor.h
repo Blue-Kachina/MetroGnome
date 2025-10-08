@@ -26,8 +26,8 @@ private:
     juce::Slider stepsSlider;      // number of steps
     juce::Slider timeSigSlider;    // time signature numerator (timing)
     juce::Slider volumeSlider;     // output volume
-    juce::TextButton enableAllBtn { "Enable All" };
-    juce::TextButton disableAllBtn { "Disable All" };
+    juce::DrawableButton enableAllBtn { "enableAll", juce::DrawableButton::ButtonStyle::ImageFitted };
+    juce::DrawableButton disableAllBtn { "disableAll", juce::DrawableButton::ButtonStyle::ImageFitted };
     juce::ToggleButton danceToggle { "Dance" };
     juce::OwnedArray<juce::ToggleButton> stepToggles; // 16 toggles
 

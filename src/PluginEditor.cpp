@@ -149,6 +149,14 @@ static constexpr const char* kParamDanceMode = "danceMode";
 static constexpr const char* kParamTimeSigNum = "timeSigNum";
 static juce::String stepEnabledId (int idx) { return juce::String("stepEnabled_") + juce::String(idx + 1); }
 
+// UI layout constants per MetroGnome-UI-Layout-Update
+static constexpr int kSidebarW = 100;
+static constexpr int kGutter = 16;
+static constexpr int kContentW = 368;
+static constexpr int kContentH = 553;
+static constexpr int kPad = 16; // top/bottom and right padding
+static constexpr int kSmallBtn = 22;
+
 //==============================================================================
 MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioProcessor& p)
     : juce::AudioProcessorEditor (&p), processor (p)
@@ -156,9 +164,9 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
     setLookAndFeel (&laf);
     setWantsKeyboardFocus (false);
 
-    // Fixed size per Phase 5
+    // Fixed size per UI layout update
     setResizable (false, false);
-    setSize (536, 1024);
+    setSize (500, 585);
     setOpaque (true); // we'll always paint background
 
     loadBackgroundImages();
@@ -221,11 +229,28 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
         addAndMakeVisible(*lbl);
     }
 
-    // Buttons
+    // Buttons (icon-only)
     addAndMakeVisible(enableAllBtn);
     addAndMakeVisible(disableAllBtn);
     enableAllBtn.setTooltip("Enable all steps");
     disableAllBtn.setTooltip("Disable all steps");
+    enableAllBtn.setName("Enable All Steps");
+    disableAllBtn.setName("Disable All Steps");
+    // Create simple vector icons
+    auto makeCheck = [](){ juce::DrawablePath d; juce::Path p; p.startNewSubPath(3, 12); p.lineTo(9, 18); p.lineTo(19, 5); d.setPath(p); d.setFill(juce::Colours::transparentBlack); d.setStrokeFill(juce::Colours::white); d.setStrokeThickness(2.5f); return d; };
+    auto makeCross = [](){ juce::DrawablePath d; juce::Path p; p.startNewSubPath(4, 4); p.lineTo(18, 18); p.startNewSubPath(18, 4); p.lineTo(4, 18); d.setPath(p); d.setFill(juce::Colours::transparentBlack); d.setStrokeFill(juce::Colours::white); d.setStrokeThickness(2.5f); return d; };
+    auto setButtonDrawables = [] (juce::DrawableButton& b, juce::DrawablePath icon)
+    {
+        auto normal = icon.createCopy();
+        auto over = icon.createCopy();
+        auto down = icon.createCopy();
+        over->setAlpha(0.85f);
+        down->setAlpha(0.7f);
+        b.setImages(normal.get(), over.get(), down.get(), nullptr, nullptr, nullptr, nullptr);
+    };
+    setButtonDrawables(enableAllBtn, makeCheck());
+    setButtonDrawables(disableAllBtn, makeCross());
+
     enableAllAttachment = std::make_unique<APVTS::ButtonAttachment>(apvts, kParamEnableAll, enableAllBtn);
     disableAllAttachment = std::make_unique<APVTS::ButtonAttachment>(apvts, kParamDisableAll, disableAllBtn);
 
@@ -248,13 +273,14 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
     // Step toggles 16
     for (int i = 0; i < 16; ++i)
     {
-        auto* tb = new juce::ToggleButton(juce::String(i + 1));
+        auto* tb = new juce::ToggleButton("");
         tb->setClickingTogglesState(true);
         tb->setTriggeredOnMouseDown(true);
         tb->setInterceptsMouseClicks(true, false);
-        tb->setColour(juce::ToggleButton::textColourId, juce::Colours::silver);
+        tb->setColour(juce::ToggleButton::textColourId, juce::Colours::transparentWhite);
         tb->setTooltip("Enable step " + juce::String(i + 1));
         tb->setWantsKeyboardFocus(false);
+        tb->setAlpha(0.0f); // invisible overlay
         stepToggles.add(tb);
         addAndMakeVisible(tb);
 
@@ -387,33 +413,31 @@ void MetroGnomeAudioProcessorEditor::paint (juce::Graphics& g)
     else
         bg = bgA.isValid() ? bgA : bgB;
 
+    // Sidebar background (solid) first
+    auto sidebarColour = findColour(juce::Slider::rotarySliderFillColourId).darker(0.35f);
+    g.setColour(sidebarColour);
+    g.fillRect(juce::Rectangle<int>(0, 0, kSidebarW, getHeight()));
+
+    // Content rect to the right of the sidebar
+    juce::Rectangle<int> contentRect(kSidebarW + kGutter, kPad, kContentW, kContentH);
+
+    // Draw background only within content rect
     if (bg.isValid())
-        g.drawImageWithin(bg, 0, 0, getWidth(), getHeight(), juce::RectanglePlacement::stretchToFit);
-    else {
-        g.fillAll(juce::Colours::black);
+        g.drawImageWithin(bg, contentRect.getX(), contentRect.getY(), contentRect.getWidth(), contentRect.getHeight(), juce::RectanglePlacement::stretchToFit);
+    else
+    {
+        g.setColour(juce::Colours::black);
+        g.fillRect(contentRect);
        #if JUCE_DEBUG
         juce::String msg = "Background image not found. Tried BinaryData, MetroAssets, and disk paths.";
         g.setColour(juce::Colours::white.withAlpha(0.8f));
-        g.drawFittedText(msg, getLocalBounds().reduced(20), juce::Justification::centred, 3);
+        g.drawFittedText(msg, contentRect.reduced(20), juce::Justification::centred, 3);
        #endif
     }
 
-    // Header bar behind rotary controls using the rotary fill colour (edge-to-edge)
-    {
-        const int headerHeight = 100;
-        auto headerArea = getLocalBounds().removeFromTop(headerHeight);
-        auto headerColour = findColour(juce::Slider::rotarySliderFillColourId).darker(0.35f);
-        g.setColour(headerColour);
-        g.fillRect(headerArea);
-    }
-
-    // Step lights overlay - single row responsive layout
-    // Define row area for steps near the bottom of the plugin (just above bottom controls)
-    auto lb = getLocalBounds().reduced(20);
-    const int bottomPanelHeight = 160;
-    const int rowHeight = 90;
-    auto panelAndRow = lb.removeFromBottom(bottomPanelHeight + rowHeight);
-    auto rowArea = panelAndRow.removeFromTop(rowHeight);
+    // Step lights overlay - single row at bottom of content rect
+    constexpr int rowHeight = 72;
+    auto rowArea = contentRect.removeFromBottom(rowHeight);
 
     const int pad = 0;
 
@@ -423,7 +447,7 @@ void MetroGnomeAudioProcessorEditor::paint (juce::Graphics& g)
         safeStepCount = juce::jlimit(1, 16, (int)sc->load());
 
     const int n = safeStepCount;
-    const int cellW = (rowArea.getWidth() - pad * (n - 1)) / n;
+    const int cellW = (rowArea.getWidth() - pad * (n - 1)) / juce::jmax(1, n);
     const int cellH = rowArea.getHeight();
 
     for (int idx = 0; idx < n; ++idx)
@@ -452,62 +476,58 @@ void MetroGnomeAudioProcessorEditor::paint (juce::Graphics& g)
 
 void MetroGnomeAudioProcessorEditor::resized()
 {
-    // Layout controls in bottom area
-    auto area = getLocalBounds().reduced(16);
+    // Sidebar layout
+    juce::Rectangle<int> sidebar(0, 0, kSidebarW, getHeight());
+    auto sb = sidebar.reduced(8, 12);
 
-    // Header with 3 columns for the rotary controls
-    const int headerHeight = 100;
-    const int labelHeight = 20;
-    const int knobWidth = 180;
-    const int gap = 10;
+    const int labelH = 18;
+    const int knobH = 84;
+    const int vgap = 12;
 
-    auto headerRectFull = area.removeFromTop(headerHeight);
+    // Steps
+    stepsLabel.setBounds(sb.removeFromTop(labelH));
+    stepsLabel.setJustificationType(juce::Justification::centred);
+    stepsSlider.setBounds(sb.removeFromTop(knobH));
+    sb.removeFromTop(vgap);
 
-    // Center the three columns within the header for symmetric distribution
-    const int totalColsW = knobWidth * 3 + gap * 2;
-    const int startX = headerRectFull.getX() + (headerRectFull.getWidth() - totalColsW) / 2;
-    juce::Rectangle<int> headerRect(startX, headerRectFull.getY(), totalColsW, headerRectFull.getHeight());
+    // Time Sig
+    beatsPerBarLabel.setBounds(sb.removeFromTop(labelH));
+    beatsPerBarLabel.setJustificationType(juce::Justification::centred);
+    timeSigSlider.setBounds(sb.removeFromTop(knobH));
+    sb.removeFromTop(vgap);
 
-    juce::Rectangle<int> col1 = headerRect.removeFromLeft(knobWidth);
-    headerRect.removeFromLeft(gap); // spacer
-    juce::Rectangle<int> col2 = headerRect.removeFromLeft(knobWidth);
-    headerRect.removeFromLeft(gap); // spacer
-    juce::Rectangle<int> col3 = headerRect.removeFromLeft(knobWidth);
+    // Volume
+    volumeLabel.setBounds(sb.removeFromTop(labelH));
+    volumeLabel.setJustificationType(juce::Justification::centred);
+    volumeSlider.setBounds(sb.removeFromTop(knobH));
+    sb.removeFromTop(vgap);
 
-    // Labels above sliders
-    stepsLabel.setBounds(col1.removeFromTop(labelHeight));
-    beatsPerBarLabel.setBounds(col2.removeFromTop(labelHeight));
-    volumeLabel.setBounds(col3.removeFromTop(labelHeight));
+    // Dance toggle below rotaries
+    const int danceH = 24;
+    danceToggle.setBounds(sb.removeFromTop(danceH));
 
-    // Sliders fill remaining space in their columns
-    stepsSlider.setBounds(col1);
-    timeSigSlider.setBounds(col2);
-    volumeSlider.setBounds(col3);
+    // Content layout
+    juce::Rectangle<int> contentRect(kSidebarW + kGutter, kPad, kContentW, kContentH);
 
-    auto mid = area.removeFromTop(360); // step row lives in paint overlay
-    juce::ignoreUnused(mid);
+    // Step row
+    constexpr int rowHeight = 72;
+    auto rowArea = contentRect.removeFromBottom(rowHeight);
 
-    auto bottom = area.removeFromBottom(160);
-    auto buttons = bottom.removeFromTop(40);
-    enableAllBtn.setBounds(buttons.removeFromLeft(140));
-    disableAllBtn.setBounds(buttons.removeFromLeft(140).withX(enableAllBtn.getRight() + 10));
-    danceToggle.setBounds(bottom.removeFromTop(30));
+    // Small buttons above step row, right-aligned inside content
+    const int spacing = 8;
+    int btnY = rowArea.getY() - kSmallBtn - 6;
+    int rightX = kSidebarW + kGutter + kContentW; // content right edge
+    disableAllBtn.setBounds(rightX - kSmallBtn, btnY, kSmallBtn, kSmallBtn);
+    enableAllBtn.setBounds(disableAllBtn.getX() - spacing - kSmallBtn, btnY, kSmallBtn, kSmallBtn);
 
-
-    // Place step toggles over the single row cells for click-to-toggle interaction
-    auto lb = getLocalBounds().reduced(20);
-    const int bottomPanelHeight = 160;
-    const int rowHeight = 90;
-    auto panelAndRow = lb.removeFromBottom(bottomPanelHeight + rowHeight);
-    auto rowArea = panelAndRow.removeFromTop(rowHeight);
+    // Overlay step toggles aligned to cells
     const int pad = 0;
-
     int safeStepCount = 8;
     if (const auto* sc = processor.getAPVTS().getRawParameterValue(kParamStepCount))
         safeStepCount = juce::jlimit(1, 16, (int)sc->load());
 
     const int n = safeStepCount;
-    const int cellW = (rowArea.getWidth() - pad * (n - 1)) / n;
+    const int cellW = (rowArea.getWidth() - pad * (n - 1)) / juce::jmax(1, n);
     const int cellH = rowArea.getHeight();
 
     for (int idx = 0; idx < stepToggles.size(); ++idx)
