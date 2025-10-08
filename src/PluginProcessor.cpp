@@ -220,7 +220,17 @@ void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     // Compute subdivision crossing for this block only if host position advanced
     metrog::SubdivisionCrossing crossing{};
-    if (isPlayingNow && ppqAdvanced)
+    bool suppressFirstBlockBoundary = false;
+    if (isPlayingNow)
+    {
+        const double beatsPerBarD = static_cast<double>(hostInfo.timeSigNumerator > 0 ? hostInfo.timeSigNumerator : 4);
+        double barPosBeats = std::fmod(std::max(ppqNow, 0.0), beatsPerBarD);
+        if (barPosBeats < 0.0) barPosBeats = 0.0;
+        const double eps = 1e-9 * beatsPerBarD;
+        const bool atBoundary = (barPosBeats <= eps) || (beatsPerBarD - barPosBeats <= eps);
+        suppressFirstBlockBoundary = playStateChanged && atBoundary;
+    }
+    if (isPlayingNow && ppqAdvanced && !suppressFirstBlockBoundary)
         crossing = timing.findFirstSubdivisionCrossing(hostInfo, buffer.getNumSamples());
 
     if (crossing.crosses)

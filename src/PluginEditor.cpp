@@ -201,7 +201,7 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
     volumeSlider.setDoubleClickReturnValue(true, 0.8);
     volumeSlider.setTitle("Volume");
     // Show volume as whole-number percent and parse % input
-    volumeSlider.setTextValueSuffix("%");
+    volumeSlider.setNumDecimalPlacesToDisplay(0);
     volumeSlider.textFromValueFunction = [] (double v)
     {
         return juce::String(juce::roundToInt(v * 100.0)) + "%";

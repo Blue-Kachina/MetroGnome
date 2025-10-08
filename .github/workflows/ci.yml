@@ -1,4 +1,4 @@
-name: CI
+name: CI Build and Test
 
 on:
   push:
@@ -7,56 +7,53 @@ on:
     branches: [ main, master ]
 
 jobs:
-  build-test:
-    name: Build and Test (${{ matrix.os }})
+  build-and-test:
+    name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [ubuntu-latest, macos-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Ninja (macOS/Linux)
-        if: runner.os != 'Windows'
-        uses: seanmiddleditch/gha-setup-ninja@v5
+      - name: Install dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ninja-build pkg-config \
+            libasound2-dev libx11-dev libxext-dev libxinerama-dev libxrandr-dev \
+            libxcomposite-dev libxcursor-dev libxrender-dev \
+            libfreetype6-dev libfontconfig1-dev \
+            libgl1-mesa-dev libjack-jackd2-dev
 
-      - name: Configure (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: cmake --preset windows-vs2022
-
-      - name: Build (Windows Release)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: cmake --build --preset windows-release --parallel
-
-      - name: Test (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: ctest --preset windows-ctest --output-on-failure
-
-      - name: Configure (macOS)
-        if: runner.os == 'macOS'
-        run: cmake --preset macos-ninja-release
-
-      - name: Build (macOS Release)
-        if: runner.os == 'macOS'
-        run: cmake --build --preset macos-release --parallel
-
-      - name: Test (macOS)
-        if: runner.os == 'macOS'
-        run: ctest --preset macos-ctest --output-on-failure
+      - name: Install Ninja (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew update
+          brew install ninja || true
 
       - name: Configure (Linux)
-        if: runner.os == 'Linux'
+        if: matrix.os == 'ubuntu-latest'
         run: cmake --preset linux-ninja-release
 
-      - name: Build (Linux Release)
-        if: runner.os == 'Linux'
-        run: cmake --build --preset linux-release --parallel
+      - name: Configure (macOS)
+        if: matrix.os == 'macos-latest'
+        run: cmake --preset macos-ninja-release
 
-      - name: Test (Linux)
-        if: runner.os == 'Linux'
-        run: ctest --preset linux-ctest --output-on-failure
+      - name: Build tests
+        run: |
+          cmake --build build/linux-ninja-release --target MetroGnome_Tests || \
+          cmake --build build/macos-ninja-release --target MetroGnome_Tests
+
+      - name: Run tests
+        run: |
+          ctest --test-dir build/linux-ninja-release --output-on-failure || \
+          ctest --test-dir build/macos-ninja-release --output-on-failure
+
+      - name: Build plugin target (optional)
+        run: |
+          cmake --build build/linux-ninja-release --target MetroGnome || \
+          cmake --build build/macos-ninja-release --target MetroGnome

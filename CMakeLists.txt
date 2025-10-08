@@ -62,7 +62,9 @@ juce_add_binary_data(MetroGnomeAssets
 
 # Link embedded resources libraries
 # External resource lib (if it exists in this build)
-target_link_libraries(MetroGnome PRIVATE MetroGnome_rc_lib)
+if (TARGET MetroGnome_rc_lib)
+    target_link_libraries(MetroGnome PRIVATE MetroGnome_rc_lib)
+endif()
 # Our in-repo assets fallback
 target_link_libraries(MetroGnome PRIVATE MetroGnomeAssets)
 
