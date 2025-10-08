@@ -24,11 +24,60 @@ public:
     {
         setColour (juce::ResizableWindow::backgroundColourId, juce::Colours::black);
         setColour (juce::Slider::rotarySliderFillColourId, juce::Colours::dimgrey.brighter(0.2f));
+        setColour (juce::Slider::rotarySliderOutlineColourId, juce::Colours::black.withAlpha(0.7f));
         setColour (juce::Slider::thumbColourId, juce::Colours::orange);
         setColour (juce::TextButton::buttonColourId, juce::Colours::darkgrey);
         setColour (juce::TextButton::textColourOnId, juce::Colours::white);
         setColour (juce::TextButton::textColourOffId, juce::Colours::white);
         setColour (juce::ToggleButton::tickColourId, juce::Colours::limegreen);
+    }
+
+    void drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height,
+                           float sliderPosProportional, float rotaryStartAngle, float rotaryEndAngle,
+                           juce::Slider& slider) override
+    {
+        auto area = juce::Rectangle<float>((float) x, (float) y, (float) width, (float) height).reduced(6.0f);
+        auto radius = juce::jmin(area.getWidth(), area.getHeight()) / 2.0f;
+        auto centre = area.getCentre();
+
+        auto outline = slider.findColour(juce::Slider::rotarySliderOutlineColourId);
+        auto fill    = slider.findColour(juce::Slider::rotarySliderFillColourId);
+        auto thumb   = slider.findColour(juce::Slider::thumbColourId);
+
+        // Base ring
+        g.setColour(outline.withAlpha(0.6f));
+        g.fillEllipse(area);
+
+        // Knob face with subtle gradient
+        juce::ColourGradient grad(fill.brighter(0.25f), centre.x, centre.y - radius,
+                                  fill.darker(0.5f),   centre.x, centre.y + radius, false);
+        grad.addColour(0.5, fill);
+        g.setGradientFill(grad);
+        g.fillEllipse(area.reduced(4.0f));
+
+        // Value arc
+        const auto angle = rotaryStartAngle + sliderPosProportional * (rotaryEndAngle - rotaryStartAngle);
+        juce::Path arc;
+        arc.addCentredArc(centre.x, centre.y, radius - 6.0f, radius - 6.0f, 0.0f, rotaryStartAngle, angle, true);
+        g.setColour(thumb.withAlpha(0.95f));
+        g.strokePath(arc, juce::PathStrokeType(3.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+        // Ticks
+        g.setColour(outline.brighter(0.2f).withAlpha(0.6f));
+        const int ticks = 12;
+        for (int i = 0; i <= ticks; ++i)
+        {
+            const float t = (float)i / (float)ticks;
+            const float a = rotaryStartAngle + t * (rotaryEndAngle - rotaryStartAngle);
+            auto p1 = centre.getPointOnCircumference(radius - 2.0f, a);
+            auto p2 = centre.getPointOnCircumference(radius - 8.0f, a);
+            g.drawLine({ p1, p2 }, 1.0f);
+        }
+
+        // Pointer
+        auto tip = centre.getPointOnCircumference(radius - 10.0f, angle);
+        g.setColour(thumb);
+        g.drawLine(centre.x, centre.y, tip.x, tip.y, 2.0f);
     }
 };
 
@@ -114,31 +163,6 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
     // Dance toggle
     addAndMakeVisible(danceToggle);
     danceAttachment = std::make_unique<APVTS::ButtonAttachment>(apvts, kParamDanceMode, danceToggle);
-
-    // Minimal MIDI learn UI
-    addAndMakeVisible(learnVolumeBtn);
-    addAndMakeVisible(clearVolumeBtn);
-    addAndMakeVisible(learnStepsBtn);
-    addAndMakeVisible(clearStepsBtn);
-
-    learnVolumeBtn.onClick = [this]
-    {
-        processor.armMidiLearn(kParamVolume);
-        learnVolumeBtn.setButtonText("Listening… move a CC");
-    };
-    clearVolumeBtn.onClick = [this]
-    {
-        processor.clearMidiMapping(kParamVolume);
-    };
-    learnStepsBtn.onClick = [this]
-    {
-        processor.armMidiLearn(kParamStepCount);
-        learnStepsBtn.setButtonText("Listening… move a CC");
-    };
-    clearStepsBtn.onClick = [this]
-    {
-        processor.clearMidiMapping(kParamStepCount);
-    };
 
     // Step toggles 16
     for (int i = 0; i < 16; ++i)
@@ -354,15 +378,6 @@ void MetroGnomeAudioProcessorEditor::resized()
     disableAllBtn.setBounds(buttons.removeFromLeft(140).withX(enableAllBtn.getRight() + 10));
     danceToggle.setBounds(bottom.removeFromTop(30));
 
-    // MIDI learn row 1 (Volume)
-    auto learnRow1 = bottom.removeFromTop(30);
-    learnVolumeBtn.setBounds(learnRow1.removeFromLeft(200));
-    clearVolumeBtn.setBounds(learnRow1.removeFromLeft(60).withX(learnVolumeBtn.getRight() + 8));
-
-    // MIDI learn row 2 (Steps)
-    auto learnRow2 = bottom.removeFromTop(30);
-    learnStepsBtn.setBounds(learnRow2.removeFromLeft(200));
-    clearStepsBtn.setBounds(learnRow2.removeFromLeft(60).withX(learnStepsBtn.getRight() + 8));
 
     // Place step toggles over the single row cells for click-to-toggle interaction
     auto rowArea = getLocalBounds().reduced(20);
@@ -401,20 +416,5 @@ void MetroGnomeAudioProcessorEditor::resized()
 
 void MetroGnomeAudioProcessorEditor::timerCallback()
 {
-    // Commit pending MIDI learn (from audio thread)
-    if (processor.hasPendingMidiLearn())
-    {
-        if (processor.commitPendingMidiLearn())
-        {
-            // update button texts with mapped CC
-            const int volCC = processor.getMappedCC(kParamVolume);
-            const int stepCC = processor.getMappedCC(kParamStepCount);
-            if (volCC >= 0) learnVolumeBtn.setButtonText(juce::String("MIDI: Volume (CC ") + juce::String(volCC) + ")");
-            else            learnVolumeBtn.setButtonText("MIDI Learn: Volume");
-            if (stepCC >= 0) learnStepsBtn.setButtonText(juce::String("MIDI: Steps (CC ") + juce::String(stepCC) + ")");
-            else             learnStepsBtn.setButtonText("MIDI Learn: Steps");
-        }
-    }
-
     repaint();
 }
