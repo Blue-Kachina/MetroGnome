@@ -197,7 +197,7 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
 
     volumeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     volumeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    volumeSlider.setRange(0.0, 1.0, 0.0);
+    volumeSlider.setRange(0.0, 1.0, 0.01); // snap to whole-percent steps
     volumeSlider.setDoubleClickReturnValue(true, 0.8);
     volumeSlider.setTitle("Volume");
     // Show volume as whole-number percent and parse % input
@@ -212,7 +212,8 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
         if (s.endsWithChar('%')) s = s.dropLastCharacters(1);
         double pct = s.getDoubleValue();
         pct = juce::jlimit(0.0, 100.0, pct);
-        return pct / 100.0;
+        const int whole = juce::roundToInt(pct);
+        return whole / 100.0;
     };
     addAndMakeVisible(volumeSlider);
     volumeAttachment = std::make_unique<APVTS::SliderAttachment>(apvts, kParamVolume, volumeSlider);

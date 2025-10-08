@@ -355,7 +355,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout MetroGnomeAudioProcessor::cr
 
     // Output level
     params.push_back(std::make_unique<juce::AudioParameterFloat>(kParamVolume, "Volume",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.0f, 1.0f), 0.8f));
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f, 1.0f), 0.8f));
 
     // UI: Dance mode toggle
     params.push_back(std::make_unique<juce::AudioParameterBool>(kParamDanceMode, "Dance Mode", false));
