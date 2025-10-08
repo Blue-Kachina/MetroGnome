@@ -217,6 +217,24 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
     };
     addAndMakeVisible(volumeSlider);
     volumeAttachment = std::make_unique<APVTS::SliderAttachment>(apvts, kParamVolume, volumeSlider);
+    // Re-apply our text/value formatters AFTER creating the attachment, since it overwrites them
+    volumeSlider.setNumDecimalPlacesToDisplay(0);
+    volumeSlider.textFromValueFunction = [] (double v)
+    {
+        return juce::String(juce::roundToInt(v * 100.0)) + "%";
+    };
+    volumeSlider.valueFromTextFunction = [] (const juce::String& t)
+    {
+        auto s = t.trim();
+        if (s.endsWithChar('%')) s = s.dropLastCharacters(1);
+        double pct = s.getDoubleValue();
+        pct = juce::jlimit(0.0, 100.0, pct);
+        const int whole = juce::roundToInt(pct);
+        return whole / 100.0;
+    };
+    // Force textbox to refresh with our formatter now and on future value changes
+    volumeSlider.onValueChange = [this]() { volumeSlider.updateText(); };
+    volumeSlider.updateText();
 
     // Labels above rotary controls
     stepsLabel.setText("Steps", juce::dontSendNotification);
