@@ -36,7 +36,32 @@ public:
         setColour (juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
         setColour (juce::TextEditor::focusedOutlineColourId, juce::Colours::transparentBlack);
         setColour (juce::TextEditor::backgroundColourId, juce::Colours::transparentBlack);
-        setColour (juce::TextEditor::textColourId, juce::Colours::white);
+        // Use dark, bold text for overlaid text boxes
+        setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    }
+
+    // Ensure slider text boxes are centred over the knob, transparent, and only editable on double-click
+    juce::Label* createSliderTextBox (juce::Slider& slider) override
+    {
+        auto* l = new juce::Label();
+        l->setJustificationType (juce::Justification::centred);
+        l->setInterceptsMouseClicks (false, false); // let the label itself not block knob drags
+        l->setColour (juce::Label::textColourId, juce::Colours::black);
+        l->setColour (juce::TextEditor::backgroundColourId, juce::Colours::transparentBlack);
+        l->setColour (juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
+        l->setColour (juce::TextEditor::focusedOutlineColourId, juce::Colours::transparentBlack);
+
+        // Bold font for readability over the knob
+        auto f = l->getFont();
+        l->setFont (f.boldened());
+
+        // Not editable on single click; editable when double-clicked; return to non-edit on loss of focus
+        l->setEditable (false, true, false);
+
+        // Ensure the label sits on top of the slider's graphics
+        l->toFront (false);
+
+        return l;
     }
 
     void drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height,
