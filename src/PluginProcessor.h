@@ -95,6 +95,9 @@ private:
     std::atomic<int> currentStepIndex { -1 };
     std::atomic<int> danceParity { 0 }; // flips on every subdivision crossing for smooth dance alternation
 
+    // Global subdivision counter to ensure full sequence progression regardless of time signature
+    std::atomic<int> globalSubdivisionCounter { 0 };
+
     // Simple click synthesizer state (RT-safe, no allocations)
     bool clickActive = false;
     int clickSampleIndex = 0;

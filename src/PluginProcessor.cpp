@@ -58,6 +58,7 @@ void MetroGnomeAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     // Reset UI indices/parity
     currentStepIndex.store(-1);
     danceParity.store(0);
+    globalSubdivisionCounter.store(0);
 
     // Initialize click synth parameters (short sine burst with exponential decay)
     const double clickMs = 10.0; // 10 ms max length
@@ -187,7 +188,9 @@ void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     if (crossing.crosses)
     {
-        const int stepIdx = (stepCount > 0) ? (crossing.subdivisionIndex % stepCount) : 0;
+        // Use a global counter to avoid resetting on each bar; guarantees full sequence progression
+        const int globalIdx = globalSubdivisionCounter.fetch_add(1) + 1; // post-increment returns previous
+        const int stepIdx = (stepCount > 0) ? (globalIdx % stepCount) : 0;
         // Update UI-visible current step index regardless of enabled state
         currentStepIndex.store(stepIdx);
         // Flip dance parity on every subdivision crossing for smooth alternation
@@ -203,7 +206,8 @@ void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             DBG ("[Gate] bar=" << lastGateBarIndex
                  << " step=" << lastGateStepIndex
                  << " sample@=" << lastGateSample
-                 << " stepCount=" << stepCount);
+                 << " stepCount=" << stepCount
+                 << " globalIdx=" << globalIdx);
 #endif
         }
     }

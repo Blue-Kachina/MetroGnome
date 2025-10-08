@@ -50,5 +50,8 @@ private:
     juce::Image bgA;
     juce::Image bgB;
 
+    // Cached layout state
+    int lastLayoutStepCount = -1;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MetroGnomeAudioProcessorEditor)
 };

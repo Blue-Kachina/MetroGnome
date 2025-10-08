@@ -408,11 +408,12 @@ void MetroGnomeAudioProcessorEditor::paint (juce::Graphics& g)
     }
 
     // Step lights overlay - single row responsive layout
-    auto bounds = getLocalBounds();
-
-    // Define row area for steps near middle of UI
-    auto rowArea = bounds.reduced(20);
-    rowArea = rowArea.withTrimmedTop(260).withHeight(90); // y ~260..350
+    // Define row area for steps near the bottom of the plugin (just above bottom controls)
+    auto lb = getLocalBounds().reduced(20);
+    const int bottomPanelHeight = 160;
+    const int rowHeight = 90;
+    auto panelAndRow = lb.removeFromBottom(bottomPanelHeight + rowHeight);
+    auto rowArea = panelAndRow.removeFromTop(rowHeight);
 
     const int pad = 0;
 
@@ -494,8 +495,11 @@ void MetroGnomeAudioProcessorEditor::resized()
 
 
     // Place step toggles over the single row cells for click-to-toggle interaction
-    auto rowArea = getLocalBounds().reduced(20);
-    rowArea = rowArea.withTrimmedTop(260).withHeight(90);
+    auto lb = getLocalBounds().reduced(20);
+    const int bottomPanelHeight = 160;
+    const int rowHeight = 90;
+    auto panelAndRow = lb.removeFromBottom(bottomPanelHeight + rowHeight);
+    auto rowArea = panelAndRow.removeFromTop(rowHeight);
     const int pad = 0;
 
     int safeStepCount = 8;
@@ -530,5 +534,15 @@ void MetroGnomeAudioProcessorEditor::resized()
 
 void MetroGnomeAudioProcessorEditor::timerCallback()
 {
+    int currentSteps = lastLayoutStepCount;
+    if (const auto* sc = processor.getAPVTS().getRawParameterValue(kParamStepCount))
+        currentSteps = juce::jlimit(1, 16, (int)sc->load());
+
+    if (currentSteps != lastLayoutStepCount)
+    {
+        lastLayoutStepCount = currentSteps;
+        resized(); // update overlay bounds when step count changes
+    }
+
     repaint();
 }
