@@ -98,6 +98,10 @@ private:
     // Global subdivision counter to ensure full sequence progression regardless of time signature
     std::atomic<int> globalSubdivisionCounter { 0 };
 
+    // Track last-known host state to align stepping and avoid repeated triggers
+    double lastHostPPQ { -1.0 };
+    bool lastHostIsPlaying { false };
+
     // Simple click synthesizer state (RT-safe, no allocations)
     bool clickActive = false;
     int clickSampleIndex = 0;

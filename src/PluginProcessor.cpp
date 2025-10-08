@@ -164,6 +164,41 @@ void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         }
     }
 
+    // Compute host-aligned indices and debounce start-of-transport glitches
+    const int subdivisionsPerBar = timing.getSubdivisionsPerBar();
+    const double ppqNow = hostInfo.ppqPosition;
+    const bool isPlayingNow = hostInfo.isPlaying;
+    const bool playStateChanged = (isPlayingNow != lastHostIsPlaying);
+    const bool ppqAdvanced = (ppqNow > lastHostPPQ + 1e-9) || playStateChanged;
+
+    auto computeGlobalFromHost = [&]() -> int
+    {
+        int barIdx = 0, beatInBar = 0;
+        metrog::TimingEngine::computeBarBeat(ppqNow, hostInfo.timeSigNumerator, barIdx, beatInBar);
+        const int subIdx = metrog::TimingEngine::computeSubdivisionIndex(ppqNow, hostInfo.timeSigNumerator, subdivisionsPerBar);
+        const int global = barIdx * subdivisionsPerBar + subIdx;
+        return global >= 0 ? global : 0;
+    };
+
+    // stepCount already computed above
+
+    if (!isPlayingNow)
+    {
+        // When stopped, reflect host playhead position in UI without emitting gates
+        const int globalHost = computeGlobalFromHost();
+        const int stepIdx = (stepCount > 0) ? (globalHost % stepCount) : 0;
+        currentStepIndex.store(stepIdx);
+    }
+    else if (playStateChanged)
+    {
+        // Align our global counter with host position on play start or play/stop toggle
+        const int globalHost = computeGlobalFromHost();
+        globalSubdivisionCounter.store(globalHost);
+        const int stepIdx = (stepCount > 0) ? (globalHost % stepCount) : 0;
+        currentStepIndex.store(stepIdx);
+        danceParity.store(globalHost & 1);
+    }
+
     // Handle enable/disable-all actions atomically (momentary behavior)
     if (enableAllParam && enableAllParam->load() >= 0.5f)
     {
@@ -183,8 +218,10 @@ void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     lastGateStepIndex = -1;
     lastGateBarIndex = -1;
 
-    // Compute subdivision crossing for this block and emit a gate if the target step is enabled
-    const auto crossing = timing.findFirstSubdivisionCrossing(hostInfo, buffer.getNumSamples());
+    // Compute subdivision crossing for this block only if host position advanced
+    metrog::SubdivisionCrossing crossing{};
+    if (isPlayingNow && ppqAdvanced)
+        crossing = timing.findFirstSubdivisionCrossing(hostInfo, buffer.getNumSamples());
 
     if (crossing.crosses)
     {
@@ -260,6 +297,9 @@ void MetroGnomeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             }
         }
     }
+    // Update last-known host state
+    lastHostPPQ = ppqNow;
+    lastHostIsPlaying = isPlayingNow;
 }
 
 //==============================================================================
