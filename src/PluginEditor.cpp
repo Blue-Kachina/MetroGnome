@@ -50,7 +50,8 @@ public:
                                   fill.darker(0.5f),   centre.x, centre.y + radius, false);
         grad.addColour(0.5, fill);
         g.setGradientFill(grad);
-        g.fillEllipse(area.reduced(4.0f));
+        auto circleArea = juce::Rectangle<float>(centre.x - radius, centre.y - radius, radius * 2.0f, radius * 2.0f);
+        g.fillEllipse(circleArea.reduced(4.0f));
 
         // Value arc
         const auto angle = rotaryStartAngle + sliderPosProportional * (rotaryEndAngle - rotaryStartAngle);
