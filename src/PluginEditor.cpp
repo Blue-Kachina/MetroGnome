@@ -30,6 +30,13 @@ public:
         setColour (juce::TextButton::textColourOnId, juce::Colours::white);
         setColour (juce::TextButton::textColourOffId, juce::Colours::white);
         setColour (juce::ToggleButton::tickColourId, juce::Colours::limegreen);
+
+        // Remove borders and backgrounds around slider text inputs globally
+        setColour (juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
+        setColour (juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
+        setColour (juce::TextEditor::focusedOutlineColourId, juce::Colours::transparentBlack);
+        setColour (juce::TextEditor::backgroundColourId, juce::Colours::transparentBlack);
+        setColour (juce::TextEditor::textColourId, juce::Colours::white);
     }
 
     void drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height,
@@ -76,6 +83,31 @@ public:
         auto tip = centre.getPointOnCircumference(radius - 10.0f, angle);
         g.setColour(thumb);
         g.drawLine(centre.x, centre.y, tip.x, tip.y, 2.0f);
+    }
+
+    juce::Slider::SliderLayout getSliderLayout(juce::Slider& slider) override
+    {
+        // Default to base for non-rotary sliders
+        auto style = slider.getSliderStyle();
+        const bool isRotary = (style == juce::Slider::Rotary ||
+                               style == juce::Slider::RotaryHorizontalDrag ||
+                               style == juce::Slider::RotaryVerticalDrag ||
+                               style == juce::Slider::RotaryHorizontalVerticalDrag);
+
+        if (! isRotary)
+            return juce::LookAndFeel_V4::getSliderLayout(slider);
+
+        juce::Slider::SliderLayout layout;
+        auto r = slider.getLocalBounds().reduced(6);
+        layout.sliderBounds = r; // knob uses full given bounds
+
+        // Size of the inline text box
+        const int boxW = juce::jmin(64, r.getWidth() - 8);
+        const int boxH = 22;
+        juce::Rectangle<int> box(boxW, boxH);
+        box.setCentre(r.getCentre());
+        layout.textBoxBounds = box;
+        return layout;
     }
 };
 
@@ -135,6 +167,20 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
     volumeSlider.setRange(0.0, 1.0, 0.0);
     volumeSlider.setDoubleClickReturnValue(true, 0.8);
     volumeSlider.setTitle("Volume");
+    // Show volume as whole-number percent and parse % input
+    volumeSlider.setTextValueSuffix("%");
+    volumeSlider.textFromValueFunction = [] (double v)
+    {
+        return juce::String(juce::roundToInt(v * 100.0)) + "%";
+    };
+    volumeSlider.valueFromTextFunction = [] (const juce::String& t)
+    {
+        auto s = t.trim();
+        if (s.endsWithChar('%')) s = s.dropLastCharacters(1);
+        double pct = s.getDoubleValue();
+        pct = juce::jlimit(0.0, 100.0, pct);
+        return pct / 100.0;
+    };
     addAndMakeVisible(volumeSlider);
     volumeAttachment = std::make_unique<APVTS::SliderAttachment>(apvts, kParamVolume, volumeSlider);
 
@@ -389,7 +435,12 @@ void MetroGnomeAudioProcessorEditor::resized()
     const int knobWidth = 180;
     const int gap = 10;
 
-    auto headerRect = area.removeFromTop(headerHeight);
+    auto headerRectFull = area.removeFromTop(headerHeight);
+
+    // Center the three columns within the header for symmetric distribution
+    const int totalColsW = knobWidth * 3 + gap * 2;
+    const int startX = headerRectFull.getX() + (headerRectFull.getWidth() - totalColsW) / 2;
+    juce::Rectangle<int> headerRect(startX, headerRectFull.getY(), totalColsW, headerRectFull.getHeight());
 
     juce::Rectangle<int> col1 = headerRect.removeFromLeft(knobWidth);
     headerRect.removeFromLeft(gap); // spacer
