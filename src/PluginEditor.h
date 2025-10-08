@@ -31,6 +31,11 @@ private:
     juce::ToggleButton danceToggle { "Dance" };
     juce::OwnedArray<juce::ToggleButton> stepToggles; // 16 toggles
 
+    // Labels for rotary controls
+    juce::Label stepsLabel;
+    juce::Label beatsPerBarLabel;
+    juce::Label volumeLabel;
+
 
     // APVTS attachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> stepsAttachment;

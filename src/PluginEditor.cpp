@@ -44,10 +44,7 @@ public:
         auto fill    = slider.findColour(juce::Slider::rotarySliderFillColourId);
         auto thumb   = slider.findColour(juce::Slider::thumbColourId);
 
-        // Base ring
-        g.setColour(outline.withAlpha(0.6f));
-        g.fillEllipse(area);
-
+        // Removed separate ellipse backplate to avoid per-knob halo
         // Knob face with subtle gradient
         juce::ColourGradient grad(fill.brighter(0.25f), centre.x, centre.y - radius,
                                   fill.darker(0.5f),   centre.x, centre.y + radius, false);
@@ -139,6 +136,18 @@ MetroGnomeAudioProcessorEditor::MetroGnomeAudioProcessorEditor (MetroGnomeAudioP
     volumeSlider.setTitle("Volume");
     addAndMakeVisible(volumeSlider);
     volumeAttachment = std::make_unique<APVTS::SliderAttachment>(apvts, kParamVolume, volumeSlider);
+
+    // Labels above rotary controls
+    stepsLabel.setText("Steps", juce::dontSendNotification);
+    beatsPerBarLabel.setText("Beats-Per-Bar", juce::dontSendNotification);
+    volumeLabel.setText("Volume", juce::dontSendNotification);
+    for (auto* lbl : { &stepsLabel, &beatsPerBarLabel, &volumeLabel })
+    {
+        lbl->setJustificationType(juce::Justification::centred);
+        lbl->setColour(juce::Label::textColourId, juce::Colours::white);
+        lbl->setInterceptsMouseClicks(false, false);
+        addAndMakeVisible(*lbl);
+    }
 
     // Buttons
     addAndMakeVisible(enableAllBtn);
@@ -317,6 +326,15 @@ void MetroGnomeAudioProcessorEditor::paint (juce::Graphics& g)
        #endif
     }
 
+    // Header bar behind rotary controls using the rotary fill colour (edge-to-edge)
+    {
+        const int headerHeight = 100;
+        auto headerArea = getLocalBounds().removeFromTop(headerHeight);
+        auto headerColour = findColour(juce::Slider::rotarySliderFillColourId).darker(0.35f);
+        g.setColour(headerColour);
+        g.fillRect(headerArea);
+    }
+
     // Step lights overlay - single row responsive layout
     auto bounds = getLocalBounds();
 
@@ -364,10 +382,29 @@ void MetroGnomeAudioProcessorEditor::resized()
     // Layout controls in bottom area
     auto area = getLocalBounds().reduced(16);
 
-    auto topBar = area.removeFromTop(60);
-    stepsSlider.setBounds(topBar.removeFromLeft(160));
-    timeSigSlider.setBounds(topBar.removeFromLeft(160).withX(stepsSlider.getRight() + 10));
-    volumeSlider.setBounds(topBar.removeFromLeft(160).withX(timeSigSlider.getRight() + 10));
+    // Header with 3 columns for the rotary controls
+    const int headerHeight = 100;
+    const int labelHeight = 20;
+    const int knobWidth = 180;
+    const int gap = 10;
+
+    auto headerRect = area.removeFromTop(headerHeight);
+
+    juce::Rectangle<int> col1 = headerRect.removeFromLeft(knobWidth);
+    headerRect.removeFromLeft(gap); // spacer
+    juce::Rectangle<int> col2 = headerRect.removeFromLeft(knobWidth);
+    headerRect.removeFromLeft(gap); // spacer
+    juce::Rectangle<int> col3 = headerRect.removeFromLeft(knobWidth);
+
+    // Labels above sliders
+    stepsLabel.setBounds(col1.removeFromTop(labelHeight));
+    beatsPerBarLabel.setBounds(col2.removeFromTop(labelHeight));
+    volumeLabel.setBounds(col3.removeFromTop(labelHeight));
+
+    // Sliders fill remaining space in their columns
+    stepsSlider.setBounds(col1);
+    timeSigSlider.setBounds(col2);
+    volumeSlider.setBounds(col3);
 
     auto mid = area.removeFromTop(360); // step row lives in paint overlay
     juce::ignoreUnused(mid);
