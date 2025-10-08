@@ -455,7 +455,7 @@ void MetroGnomeAudioProcessorEditor::paint (juce::Graphics& g)
     }
 
     // Step lights overlay - single row at bottom of content rect
-    constexpr int rowHeight = 72;
+    constexpr int rowHeight = 65;
     auto rowArea = contentRect.removeFromBottom(rowHeight);
 
     const int pad = 0;
@@ -529,7 +529,7 @@ void MetroGnomeAudioProcessorEditor::resized()
     juce::Rectangle<int> contentRect(kSidebarW + kGutter, kPad, kContentW, kContentH);
 
     // Step row
-    constexpr int rowHeight = 72;
+    constexpr int rowHeight = 57;
     auto rowArea = contentRect.removeFromBottom(rowHeight);
 
     // Small buttons above step row, right-aligned inside content
